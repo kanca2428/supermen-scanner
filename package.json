@@ -1,0 +1,16 @@
+﻿{
+  "name": "supermen-scanner",
+  "version": "16.0.0",
+  "description": "SUPERMEN V16.0 - Crypto & BIST Scanner",
+  "main": "src/scanner.js",
+  "scripts": {
+    "start": "node src/scanner.js all",
+    "scan:crypto": "node src/scanner.js crypto",
+    "scan:bist": "node src/scanner.js bist",
+    "scan:all": "node src/scanner.js all",
+    "test": "node src/scanner.js test"
+  },
+  "dependencies": {
+    "axios": "^1.7.0"
+  }
+}
