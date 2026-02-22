@@ -1,5 +1,4 @@
-﻿// config.js
-module.exports = {
+﻿module.exports = {
   // ═══════════════════════════════════════════════════════════════
   // TELEGRAM AYARLARI
   // ═══════════════════════════════════════════════════════════════
@@ -30,15 +29,11 @@ module.exports = {
   // ═══════════════════════════════════════════════════════════════
   // PIVOT POINT / SUPPORT & RESISTANCE AYARLARI
   // ═══════════════════════════════════════════════════════════════
-  PIVOT_USE_H4: true,     // ✅ Stochastic ile aynı
-  PIVOT_USE_D1: true,     // ✅ Stochastic ile aynı
-  PIVOT_USE_W1: true,     // ✅ Stochastic ile aynı
-  PIVOT_METHOD: "classic", // classic, fibonacci, camarilla, woodie
-
-  // S/R Sinyal Kuralları:
-  // BUY  → Fiyat S1/S2/S3 seviyesine yakın veya altında
-  // SELL → Fiyat R1/R2/R3 seviyesine yakın veya üstünde
-  SR_PROXIMITY_PERCENT: 0.5, // Fiyat S/R seviyesine %0.5 yakınsa sinyal
+  PIVOT_USE_H4: true,
+  PIVOT_USE_D1: true,
+  PIVOT_USE_W1: true,
+  PIVOT_METHOD: "classic",
+  SR_PROXIMITY_PERCENT: 0.5,
 
   // ═══════════════════════════════════════════════════════════════
   // ATR AYARLARI
@@ -255,5 +250,15 @@ module.exports = {
     "VKFYO","VKGYO","VKING","VOCAS","YAPRK","YATAS","YAYLA",
     "YBTAS","YEOTK","YGGYO","YGYO","YIGIT","YKSLN","YONGA",
     "YYAPI","ZEDUR","ZRGYO"
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
+  // YENİ: FOREX PARİTELERİ (28 MAJÖR)
+  // ═══════════════════════════════════════════════════════════════
+  FOREX_PAIRS: [
+    "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD",
+    "EURGBP", "EURJPY", "GBPJPY", "CHFJPY", "EURCHF", "AUDJPY", "CADJPY",
+    "EURAUD", "EURCAD", "EURNZD", "GBPAUD", "GBPCAD", "GBPNZD", "GBPCHF",
+    "AUDNZD", "AUDCAD", "AUDCHF", "NZDCAD", "NZDCHF", "CADCHF", "USDSGD"
   ]
 };
