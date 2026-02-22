@@ -1,1 +1,101 @@
-﻿<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SUPERMEN V16.0</title></head><body><h1>🚀 SUPERMEN V16.0 Dashboard</h1><p>Veriler data/signals.json dosyasından okunur.</p></body></html>
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUPERMEN V16.0 Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #e0e0e0; margin: 0; padding: 20px; }
+        h1 { text-align: center; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5); }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .market-section { margin-bottom: 40px; background: #2d2d2d; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .market-title { font-size: 1.5em; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 15px; color: #ffcc00; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background-color: #333; color: #aaa; }
+        tr:hover { background-color: #383838; }
+        .long { color: #00ff88; font-weight: bold; }
+        .short { color: #ff4444; font-weight: bold; }
+        .timestamp { text-align: center; color: #888; font-size: 0.9em; margin-top: 20px; }
+        .loading { text-align: center; padding: 20px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🚀 SUPERMEN V16.0 DASHBOARD</h1>
+        <div class="timestamp" id="lastUpdate">Veriler Yükleniyor...</div>
+
+        <!-- CRYPTO -->
+        <div class="market-section">
+            <div class="market-title">💎 KRİPTO PARALAR</div>
+            <div id="crypto-container" class="loading">Veri bekleniyor...</div>
+        </div>
+
+        <!-- BIST -->
+        <div class="market-section">
+            <div class="market-title">📈 BIST HİSSELERİ</div>
+            <div id="bist-container" class="loading">Veri bekleniyor...</div>
+        </div>
+
+        <!-- FOREX -->
+        <div class="market-section">
+            <div class="market-title">💱 FOREX PARİTELERİ</div>
+            <div id="forex-container" class="loading">Veri bekleniyor...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                // GitHub'dan ham JSON verisini çek
+                const response = await fetch('data/signals.json?t=' + new Date().getTime());
+                const data = await response.json();
+                
+                document.getElementById('lastUpdate').innerText = 'Son Güncelleme: ' + new Date().toLocaleString("tr-TR");
+
+                renderTable('crypto', data.crypto);
+                renderTable('bist', data.bist);
+                renderTable('forex', data.forex);
+
+            } catch (error) {
+                console.error('Hata:', error);
+                document.getElementById('lastUpdate').innerText = 'Veri okunamadı veya dosya henüz oluşmadı.';
+            }
+        }
+
+        function renderTable(type, signals) {
+            const container = document.getElementById(type + '-container');
+            if (!signals || signals.length === 0) {
+                container.innerHTML = '<div style="padding:10px; color:#888;">🚫 Şu an uygun sinyal yok.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Sembol</th><th>Yön</th><th>Giriş</th><th>Hedef 1</th><th>Hedef 2</th><th>Stop</th><th>Stoch (H4/D1/W1)</th></tr></thead><tbody>';
+            
+            signals.forEach(s => {
+                const dirClass = s.direction === 1 ? 'long' : 'short';
+                const dirText = s.direction === 1 ? 'AL (LONG)' : 'SAT (SHORT)';
+                
+                html += `<tr>
+                    <td><b>${s.symbol}</b></td>
+                    <td class="${dirClass}">${dirText}</td>
+                    <td>${s.entryPrice.toFixed(type === 'crypto' && s.entryPrice < 1 ? 4 : 2)}</td>
+                    <td>${s.tp1.toFixed(type === 'crypto' && s.tp1 < 1 ? 4 : 2)}</td>
+                    <td>${s.tp2.toFixed(type === 'crypto' && s.tp2 < 1 ? 4 : 2)}</td>
+                    <td>${s.sl.toFixed(type === 'crypto' && s.sl < 1 ? 4 : 2)}</td>
+                    <td>${s.stochKStr}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Sayfa açılınca yükle
+        loadData();
+        // Her 60 saniyede bir yenile
+        setInterval(loadData, 60000);
+    </script>
+</body>
+</html>
