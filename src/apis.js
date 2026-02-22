@@ -3,6 +3,18 @@ var CONFIG = require("./config");
 var memCache = {};
 var CACHE_TTL = { M5: 300, M15: 900, H4: 7200, D1: 21600, W1: 43200 };
 
+// Zaman dilimi dönüşümü için
+function toLocalTime(utcTime) {
+  return new Date(utcTime * 1000).toLocaleString('tr-TR', {
+    timeZone: 'Europe/Istanbul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 function getCached(key) {
   var entry = memCache[key];
   if (!entry) return null;
@@ -34,6 +46,7 @@ async function safeFetch(url, options) {
     });
     return { code: resp.status, data: resp.data, ok: resp.status === 200 };
   } catch (e) {
+    console.log("[API] Fetch error: " + url + " - " + e.message);
     return { code: 0, data: null, ok: false, error: e.message };
   }
 }
@@ -41,14 +54,18 @@ async function safeFetch(url, options) {
 async function getKlinesBinance(symbol, tfKey, limit) {
   var interval = CONFIG.BINANCE_TF_MAP[tfKey];
   if (!interval) return null;
+  
   var url = CONFIG.BINANCE_BASE + "/api/v3/klines?symbol=" + symbol + "&interval=" + interval + "&limit=" + limit;
   var r = await safeFetch(url);
   if (!r.ok || !Array.isArray(r.data)) return null;
+  
   var candles = [];
   for (var i = r.data.length - 1; i >= 0; i--) {
     var d = r.data[i];
+    var timestamp = Math.floor(parseInt(d[0]) / 1000);
     candles.push({
-      time: Math.floor(parseInt(d[0]) / 1000),
+      time: timestamp,
+      localTime: toLocalTime(timestamp),  // Yerel zaman eklendi
       open: parseFloat(d[1]),
       high: parseFloat(d[2]),
       low: parseFloat(d[3]),
@@ -63,15 +80,18 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
   var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(yahooSymbol) + "?interval=" + interval + "&range=" + range;
   var r = await safeFetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
   if (!r.ok || !r.data || !r.data.chart || !r.data.chart.result) return null;
+  
   var cr = r.data.chart.result[0];
   var ts = cr.timestamp;
   var q = cr.indicators.quote[0];
   if (!ts || !q) return null;
+  
   var candles = [];
   for (var i = ts.length - 1; i >= 0; i--) {
     if (q.close[i] == null) continue;
     candles.push({
       time: ts[i],
+      localTime: toLocalTime(ts[i]),  // Yerel zaman eklendi
       open: q.open[i],
       high: q.high[i],
       low: q.low[i],
@@ -83,14 +103,10 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
 }
 
 function toBinanceSymbol(pair) {
-  // Önce slash'ları temizle
   let symbol = pair.replace("/", "");
-  
-  // Eğer USDT ile bitmiyorsa ekle
   if (!symbol.endsWith("USDT")) {
     symbol = symbol.replace("USD", "USDT");
   }
-  
   return symbol;
 }
 
@@ -104,22 +120,41 @@ async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
   var cKey = ("C_" + marketType + "_" + displaySymbol + "_" + tfKey).replace(/[^a-zA-Z0-9_]/g, "_");
   var cached = getCached(cKey);
   if (cached) return cached;
+  
   var candles = null;
   if (marketType === "CRYPTO") {
-    try { candles = await getKlinesBinance(toBinanceSymbol(displaySymbol), tfKey, limit); } catch (e) {}
+    try {
+      const binanceSymbol = toBinanceSymbol(displaySymbol);
+      candles = await getKlinesBinance(binanceSymbol, tfKey, limit);
+    } catch (e) {
+      console.error("[API] Binance error:", e);
+    }
   } else if (marketType === "BIST" || marketType === "FOREX") {
     var yt = CONFIG.YAHOO_TF_MAP[tfKey];
-    if (yt) candles = await getKlinesYahoo(toYahooSymbol(displaySymbol, marketType), yt.interval, yt.range);
+    if (yt) {
+      const yahooSymbol = toYahooSymbol(displaySymbol, marketType);
+      candles = await getKlinesYahoo(yahooSymbol, yt.interval, yt.range);
+    }
   }
-  if (candles) setCache(cKey, candles, CACHE_TTL[tfKey]);
+  
+  if (candles) {
+    setCache(cKey, candles, CACHE_TTL[tfKey]);
+  }
+  
   return candles;
 }
 
 async function checkAPIHealth() {
   return {
     binance: (await safeFetch(CONFIG.BINANCE_BASE + "/api/v3/ping")).ok,
-    yahoo: (await safeFetch("https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d")).ok
+    yahoo: (await safeFetch("https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d")).ok,
+    timestamp: new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
   };
 }
 
-module.exports = { safeFetch, fetchCandles, checkAPIHealth, getCacheStats };
+module.exports = { 
+  safeFetch, 
+  fetchCandles, 
+  checkAPIHealth, 
+  getCacheStats 
+};
