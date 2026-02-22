@@ -71,13 +71,6 @@
             color: var(--text-color);
         }
 
-        .chart-container {
-            background-color: var(--secondary-color);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
         .nav-link {
             color: #fff !important;
         }
@@ -93,6 +86,13 @@
         .table-dark th,
         .table-dark td {
             border-color: var(--accent-color);
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
         }
 
         @media (max-width: 768px) {
@@ -152,25 +152,41 @@
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Toplam Sinyal</h5>
-                    <div class="stats-value" id="totalSignals">0</div>
+                    <div class="stats-value" id="totalSignals">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Başarı Oranı</h5>
-                    <div class="stats-value" id="successRate">0%</div>
+                    <div class="stats-value" id="successRate">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Aktif Sinyal</h5>
-                    <div class="stats-value" id="activeSignals">0</div>
+                    <div class="stats-value" id="activeSignals">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Son Güncelleme</h5>
-                    <div class="stats-value" id="lastUpdate">-</div>
+                    <div class="stats-value" id="lastUpdate">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -179,8 +195,10 @@
         <section id="signals" class="row">
             <div class="col-12">
                 <h2 class="h4 mb-3">Aktif Sinyaller</h2>
-                <div id="signalsContainer">
-                    <!-- Signals will be loaded here -->
+                <div id="signalsContainer" class="loading-spinner">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -201,7 +219,13 @@
                             </tr>
                         </thead>
                         <tbody id="historyTable">
-                            <!-- History will be loaded here -->
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -213,13 +237,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // GitHub bilgileri
+        const GITHUB_USERNAME = 'kanca2428';
+        const REPO_NAME = 'supermen-scanner';
+
         // Veri yükleme fonksiyonu
         async function loadData() {
             try {
                 const [signalsResponse, statsResponse] = await Promise.all([
-                    fetch('signals.json'),
-                    fetch('stats.json')
+                    fetch(`https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/signals.json`),
+                    fetch(`https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/stats.json`)
                 ]);
+
+                if (!signalsResponse.ok || !statsResponse.ok) {
+                    throw new Error('Veri yüklenemedi');
+                }
 
                 const signals = await signalsResponse.json();
                 const stats = await statsResponse.json();
@@ -229,7 +261,20 @@
                 updateHistory(signals);
             } catch (error) {
                 console.error('Veri yükleme hatası:', error);
+                showError('Veriler yüklenemedi. Lütfen daha sonra tekrar deneyin.');
             }
+        }
+
+        // Hata gösterme fonksiyonu
+        function showError(message) {
+            const alerts = document.createElement('div');
+            alerts.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alerts.style.zIndex = '9999';
+            alerts.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alerts);
         }
 
         // İstatistikleri güncelle
@@ -245,24 +290,29 @@
             const container = document.getElementById('signalsContainer');
             container.innerHTML = '';
 
+            if (!signals || signals.length === 0) {
+                container.innerHTML = '<p class="text-center">Henüz sinyal bulunmuyor.</p>';
+                return;
+            }
+
             signals.forEach(signal => {
                 const card = document.createElement('div');
                 card.className = 'signal-card';
                 card.innerHTML = `
                     <div class="row align-items-center">
                         <div class="col-md-4">
-                            <h5>${signal.pair}</h5>
+                            <h5>${signal.pair || 'N/A'}</h5>
                             <span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">
-                                ${signal.type}
+                                ${signal.type || 'N/A'}
                             </span>
                         </div>
                         <div class="col-md-4">
-                            <p class="mb-0">Fiyat: ${signal.price}</p>
-                            <p class="mb-0">Hedef: ${signal.target}</p>
+                            <p class="mb-0">Fiyat: ${signal.price || 'N/A'}</p>
+                            <p class="mb-0">Hedef: ${signal.target || 'N/A'}</p>
                         </div>
                         <div class="col-md-4 text-end">
-                            <p class="mb-0">Zaman: ${new Date(signal.time).toLocaleString('tr-TR')}</p>
-                            <p class="mb-0">Güç: ${signal.strength}%</p>
+                            <p class="mb-0">Zaman: ${signal.time ? new Date(signal.time).toLocaleString('tr-TR') : 'N/A'}</p>
+                            <p class="mb-0">Güç: ${signal.strength || '0'}%</p>
                         </div>
                     </div>
                 `;
@@ -275,13 +325,18 @@
             const tbody = document.getElementById('historyTable');
             tbody.innerHTML = '';
 
+            if (!signals || signals.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Geçmiş sinyal bulunmuyor.</td></tr>';
+                return;
+            }
+
             signals.slice(0, 10).forEach(signal => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${new Date(signal.time).toLocaleString('tr-TR')}</td>
-                    <td>${signal.pair}</td>
-                    <td><span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">${signal.type}</span></td>
-                    <td>${signal.price}</td>
+                    <td>${signal.time ? new Date(signal.time).toLocaleString('tr-TR') : 'N/A'}</td>
+                    <td>${signal.pair || 'N/A'}</td>
+                    <td><span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">${signal.type || 'N/A'}</span></td>
+                    <td>${signal.price || 'N/A'}</td>
                     <td>${signal.profit || '-'}</td>
                 `;
                 tbody.appendChild(row);
