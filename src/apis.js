@@ -82,18 +82,13 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
     return candles.length > 0 ? candles : null;
 }
 
-// GÜNCELLENEN FONKSİYON
 function toBinanceSymbol(pair) {
-    // Farklı formatları normalize et
-    let symbol = pair
-        .replace("/", "")
-        .replace("-", "")
-        .replace("_", "")
-        .toUpperCase();
+    // Önce /USD formatını USDT'ye çevir
+    let symbol = pair.replace("/USD", "USDT");
     
     // Eğer zaten USDT ile bitmiyorsa ekle
     if (!symbol.endsWith("USDT")) {
-        symbol = symbol.replace("USD", "USDT");
+        symbol = symbol.replace("/", "") + "USDT";
     }
     
     return symbol;
@@ -109,18 +104,29 @@ async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
     var cKey = ("C_" + marketType + "_" + displaySymbol + "_" + tfKey).replace(/[^a-zA-Z0-9_]/g, "_");
     var cached = getCached(cKey);
     if (cached) return cached;
+    
     var candles = null;
     if (marketType === "CRYPTO") {
         try {
-            candles = await getKlinesBinance(toBinanceSymbol(displaySymbol), tfKey, limit);
+            const binanceSymbol = toBinanceSymbol(displaySymbol);
+            console.log("Binance sembolü:", binanceSymbol);
+            candles = await getKlinesBinance(binanceSymbol, tfKey, limit);
         } catch (e) {
-            console.error("Binance API error:", e);
+            console.error("Binance API hatası:", e);
         }
     } else if (marketType === "BIST" || marketType === "FOREX") {
         var yt = CONFIG.YAHOO_TF_MAP[tfKey];
-        if (yt) candles = await getKlinesYahoo(toYahooSymbol(displaySymbol, marketType), yt.interval, yt.range);
+        if (yt) {
+            const yahooSymbol = toYahooSymbol(displaySymbol, marketType);
+            console.log("Yahoo sembolü:", yahooSymbol);
+            candles = await getKlinesYahoo(yahooSymbol, yt.interval, yt.range);
+        }
     }
-    if (candles) setCache(cKey, candles, CACHE_TTL[tfKey]);
+    
+    if (candles) {
+        setCache(cKey, candles, CACHE_TTL[tfKey]);
+    }
+    
     return candles;
 }
 
