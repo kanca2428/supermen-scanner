@@ -71,12 +71,31 @@
             color: var(--text-color);
         }
 
-        .nav-link {
-            color: #fff !important;
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
 
-        .nav-link:hover {
-            color: var(--text-color) !important;
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--text-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .table-dark {
@@ -88,21 +107,29 @@
             border-color: var(--accent-color);
         }
 
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
+        .error-message {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
         }
 
-        @media (max-width: 768px) {
-            .signal-card {
-                margin-bottom: 15px;
-            }
+        .last-update {
+            font-size: 0.9em;
+            color: #888;
+            text-align: right;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
     <!-- Header -->
     <header class="dashboard-header">
         <div class="container">
@@ -123,27 +150,10 @@
         </div>
     </header>
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#signals">Sinyaller</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#statistics">İstatistikler</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#history">Geçmiş</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <!-- Error Message -->
+    <div class="container">
+        <div class="error-message" id="errorMessage"></div>
+    </div>
 
     <!-- Main Content -->
     <main class="container mt-4">
@@ -152,41 +162,25 @@
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Toplam Sinyal</h5>
-                    <div class="stats-value" id="totalSignals">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <div class="stats-value" id="totalSignals">0</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Başarı Oranı</h5>
-                    <div class="stats-value" id="successRate">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <div class="stats-value" id="successRate">0%</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Aktif Sinyal</h5>
-                    <div class="stats-value" id="activeSignals">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <div class="stats-value" id="activeSignals">0</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
                     <h5 class="mb-2">Son Güncelleme</h5>
-                    <div class="stats-value" id="lastUpdate">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <div class="stats-value" id="lastUpdate">-</div>
                 </div>
             </div>
         </section>
@@ -195,11 +189,7 @@
         <section id="signals" class="row">
             <div class="col-12">
                 <h2 class="h4 mb-3">Aktif Sinyaller</h2>
-                <div id="signalsContainer" class="loading-spinner">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
+                <div id="signalsContainer"></div>
             </div>
         </section>
 
@@ -218,15 +208,7 @@
                                 <th>Kar</th>
                             </tr>
                         </thead>
-                        <tbody id="historyTable">
-                            <tr>
-                                <td colspan="5" class="text-center">
-                                    <div class="spinner-border" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
+                        <tbody id="historyTable"></tbody>
                     </table>
                 </div>
             </div>
@@ -235,65 +217,83 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // GitHub bilgileri
-        const GITHUB_USERNAME = 'kanca2428';
-        const REPO_NAME = 'supermen-scanner';
+        // Global değişkenler
+        let isLoading = false;
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
+
+        // Loading göster/gizle
+        function showLoading() {
+            isLoading = true;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            isLoading = false;
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Hata mesajı göster
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Zaman dilimi dönüşümü
+        function toLocalTime(timestamp) {
+            return new Date(timestamp * 1000).toLocaleString('tr-TR', {
+                timeZone: 'Europe/Istanbul',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
 
         // Veri yükleme fonksiyonu
         async function loadData() {
-            try {
-                const [signalsResponse, statsResponse] = await Promise.all([
-                    fetch(`https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/signals.json`),
-                    fetch(`https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/stats.json`)
-                ]);
+            if (isLoading) return;
 
-                if (!signalsResponse.ok || !statsResponse.ok) {
-                    throw new Error('Veri yüklenemedi');
+            showLoading();
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/kanca2428/supermen-scanner/main/signals.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const signals = await signalsResponse.json();
-                const stats = await statsResponse.json();
-
-                updateStatistics(stats);
-                displaySignals(signals);
-                updateHistory(signals);
+                const signals = await response.json();
+                updateDashboard(signals);
+                retryCount = 0;
             } catch (error) {
                 console.error('Veri yükleme hatası:', error);
-                showError('Veriler yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    setTimeout(loadData, 5000); // 5 saniye sonra tekrar dene
+                } else {
+                    showError('Veriler yüklenemedi. Lütfen sayfayı yenileyin.');
+                }
+            } finally {
+                hideLoading();
             }
         }
 
-        // Hata gösterme fonksiyonu
-        function showError(message) {
-            const alerts = document.createElement('div');
-            alerts.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-            alerts.style.zIndex = '9999';
-            alerts.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alerts);
-        }
+        // Dashboard'u güncelle
+        function updateDashboard(signals) {
+            // İstatistikleri güncelle
+            document.getElementById('totalSignals').textContent = signals.length;
+            document.getElementById('activeSignals').textContent = signals.filter(s => s.active).length;
+            document.getElementById('lastUpdate').textContent = toLocalTime(Date.now() / 1000);
 
-        // İstatistikleri güncelle
-        function updateStatistics(stats) {
-            document.getElementById('totalSignals').textContent = stats.total || 0;
-            document.getElementById('successRate').textContent = stats.successRate || '0%';
-            document.getElementById('activeSignals').textContent = stats.active || 0;
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('tr-TR');
-        }
-
-        // Sinyalleri göster
-        function displaySignals(signals) {
+            // Sinyalleri göster
             const container = document.getElementById('signalsContainer');
             container.innerHTML = '';
-
-            if (!signals || signals.length === 0) {
-                container.innerHTML = '<p class="text-center">Henüz sinyal bulunmuyor.</p>';
-                return;
-            }
 
             signals.forEach(signal => {
                 const card = document.createElement('div');
@@ -301,42 +301,38 @@
                 card.innerHTML = `
                     <div class="row align-items-center">
                         <div class="col-md-4">
-                            <h5>${signal.pair || 'N/A'}</h5>
-                            <span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">
-                                ${signal.type || 'N/A'}
+                            <h5>${signal.symbol}</h5>
+                            <span class="signal-badge ${signal.signal === 'LONG' ? 'buy-signal' : 'sell-signal'}">
+                                ${signal.signal}
                             </span>
                         </div>
                         <div class="col-md-4">
-                            <p class="mb-0">Fiyat: ${signal.price || 'N/A'}</p>
-                            <p class="mb-0">Hedef: ${signal.target || 'N/A'}</p>
+                            <p class="mb-0">Giriş: ${signal.entryPrice}</p>
+                            <p class="mb-0">Stop: ${signal.sl}</p>
                         </div>
                         <div class="col-md-4 text-end">
-                            <p class="mb-0">Zaman: ${signal.time ? new Date(signal.time).toLocaleString('tr-TR') : 'N/A'}</p>
-                            <p class="mb-0">Güç: ${signal.strength || '0'}%</p>
+                            <p class="mb-0">TP1: ${signal.tp1}</p>
+                            <p class="mb-0">TP2: ${signal.tp2}</p>
+                            <div class="last-update">
+                                ${toLocalTime(signal.time)}
+                            </div>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
-        }
 
-        // Geçmişi güncelle
-        function updateHistory(signals) {
+            // Geçmişi güncelle
             const tbody = document.getElementById('historyTable');
             tbody.innerHTML = '';
-
-            if (!signals || signals.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Geçmiş sinyal bulunmuyor.</td></tr>';
-                return;
-            }
-
+            
             signals.slice(0, 10).forEach(signal => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${signal.time ? new Date(signal.time).toLocaleString('tr-TR') : 'N/A'}</td>
-                    <td>${signal.pair || 'N/A'}</td>
-                    <td><span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">${signal.type || 'N/A'}</span></td>
-                    <td>${signal.price || 'N/A'}</td>
+                    <td>${toLocalTime(signal.time)}</td>
+                    <td>${signal.symbol}</td>
+                    <td><span class="signal-badge ${signal.signal === 'LONG' ? 'buy-signal' : 'sell-signal'}">${signal.signal}</span></td>
+                    <td>${signal.entryPrice}</td>
                     <td>${signal.profit || '-'}</td>
                 `;
                 tbody.appendChild(row);
@@ -344,10 +340,11 @@
         }
 
         // Sayfa yüklendiğinde verileri getir
-        document.addEventListener('DOMContentLoaded', loadData);
-
-        // Her 30 saniyede bir verileri güncelle
-        setInterval(loadData, 30000);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            // Her 30 saniyede bir verileri güncelle
+            setInterval(loadData, 30000);
+        });
     </script>
 </body>
 </html>
