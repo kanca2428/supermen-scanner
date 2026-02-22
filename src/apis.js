@@ -34,16 +34,32 @@ async function safeFetch(url, options) {
         });
         return { code: resp.status, data: resp.data, ok: resp.status === 200 };
     } catch (e) {
+        console.error("Fetch error:", e.message);
         return { code: 0, data: null, ok: false, error: e.message };
     }
 }
 
 async function getKlinesBinance(symbol, tfKey, limit) {
     var interval = CONFIG.BINANCE_TF_MAP[tfKey];
-    if (!interval) return null;
+    if (!interval) {
+        console.log("Geçersiz zaman dilimi:", tfKey);
+        return null;
+    }
+    
     var url = CONFIG.BINANCE_BASE + "/api/v3/klines?symbol=" + symbol + "&interval=" + interval + "&limit=" + limit;
+    console.log("Binance URL:", url);
+    
     var r = await safeFetch(url);
-    if (!r.ok || !Array.isArray(r.data)) return null;
+    if (!r.ok) {
+        console.log("Binance API hatası:", r.code);
+        return null;
+    }
+    
+    if (!Array.isArray(r.data)) {
+        console.log("Binance veri formatı hatalı:", typeof r.data);
+        return null;
+    }
+    
     var candles = [];
     for (var i = r.data.length - 1; i >= 0; i--) {
         var d = r.data[i];
@@ -61,12 +77,22 @@ async function getKlinesBinance(symbol, tfKey, limit) {
 
 async function getKlinesYahoo(yahooSymbol, interval, range) {
     var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(yahooSymbol) + "?interval=" + interval + "&range=" + range;
+    console.log("Yahoo URL:", url);
+    
     var r = await safeFetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (!r.ok || !r.data || !r.data.chart || !r.data.chart.result) return null;
+    if (!r.ok || !r.data || !r.data.chart || !r.data.chart.result) {
+        console.log("Yahoo API hatası:", r.code);
+        return null;
+    }
+    
     var cr = r.data.chart.result[0];
     var ts = cr.timestamp;
     var q = cr.indicators.quote[0];
-    if (!ts || !q) return null;
+    if (!ts || !q) {
+        console.log("Yahoo veri formatı hatalı");
+        return null;
+    }
+    
     var candles = [];
     for (var i = ts.length - 1; i >= 0; i--) {
         if (q.close[i] == null) continue;
@@ -83,34 +109,57 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
 }
 
 function toBinanceSymbol(pair) {
-    // Önce /USD formatını USDT'ye çevir
-    let symbol = pair.replace("/USD", "USDT");
+    console.log("Giriş sembolü:", pair);
     
-    // Eğer zaten USDT ile bitmiyorsa ekle
-    if (!symbol.endsWith("USDT")) {
-        symbol = symbol.replace("/", "") + "USDT";
+    // Farklı formatları normalize et
+    let symbol = pair
+        .replace("/", "")
+        .replace("-", "")
+        .replace("_", "")
+        .replace(".", "")
+        .toUpperCase();
+    
+    // Eğer zaten USDT/BUSD ile bitmiyorsa ekle
+    if (!symbol.endsWith("USDT") && !symbol.endsWith("BUSD") && !symbol.endsWith("BTC") && !symbol.endsWith("ETH")) {
+        symbol = symbol.replace("USD", "USDT");
     }
     
+    console.log("Çıkış sembolü:", symbol);
     return symbol;
 }
 
 function toYahooSymbol(displaySymbol, marketType) {
-    if (marketType === "BIST") return displaySymbol.includes(".IS") ? displaySymbol : displaySymbol + ".IS";
-    if (marketType === "FOREX") return displaySymbol + "=X";
+    if (marketType === "BIST") {
+        const symbol = displaySymbol.includes(".IS") ? displaySymbol : displaySymbol + ".IS";
+        console.log("BIST sembolü:", symbol);
+        return symbol;
+    }
+    if (marketType === "FOREX") {
+        const symbol = displaySymbol + "=X";
+        console.log("Forex sembolü:", symbol);
+        return symbol;
+    }
     return displaySymbol;
 }
 
 async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
     var cKey = ("C_" + marketType + "_" + displaySymbol + "_" + tfKey).replace(/[^a-zA-Z0-9_]/g, "_");
+    console.log("Cache anahtarı:", cKey);
+    
     var cached = getCached(cKey);
-    if (cached) return cached;
+    if (cached) {
+        console.log("Cache'den veri bulundu:", cKey);
+        return cached;
+    }
     
     var candles = null;
     if (marketType === "CRYPTO") {
         try {
             const binanceSymbol = toBinanceSymbol(displaySymbol);
-            console.log("Binance sembolü:", binanceSymbol);
             candles = await getKlinesBinance(binanceSymbol, tfKey, limit);
+            if (candles) {
+                console.log("Binance'den veri alındı:", binanceSymbol);
+            }
         } catch (e) {
             console.error("Binance API hatası:", e);
         }
@@ -118,22 +167,34 @@ async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
         var yt = CONFIG.YAHOO_TF_MAP[tfKey];
         if (yt) {
             const yahooSymbol = toYahooSymbol(displaySymbol, marketType);
-            console.log("Yahoo sembolü:", yahooSymbol);
             candles = await getKlinesYahoo(yahooSymbol, yt.interval, yt.range);
+            if (candles) {
+                console.log("Yahoo'dan veri alındı:", yahooSymbol);
+            }
         }
     }
     
     if (candles) {
         setCache(cKey, candles, CACHE_TTL[tfKey]);
+        console.log("Veri cache'e eklendi:", cKey);
+    } else {
+        console.log("Veri alınamadı:", displaySymbol, marketType, tfKey);
     }
     
     return candles;
 }
 
 async function checkAPIHealth() {
+    const binanceHealth = await safeFetch(CONFIG.BINANCE_BASE + "/api/v3/ping");
+    const yahooHealth = await safeFetch("https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d");
+    
+    console.log("API Durumları:");
+    console.log("Binance:", binanceHealth.ok ? "Aktif" : "Pasif");
+    console.log("Yahoo:", yahooHealth.ok ? "Aktif" : "Pasif");
+    
     return {
-        binance: (await safeFetch(CONFIG.BINANCE_BASE + "/api/v3/ping")).ok,
-        yahoo: (await safeFetch("https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d")).ok
+        binance: binanceHealth.ok,
+        yahoo: yahooHealth.ok
     };
 }
 
