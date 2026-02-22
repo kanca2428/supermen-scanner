@@ -1,101 +1,298 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUPERMEN V16.0 Dashboard</title>
+    <title>Trading Signal Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #e0e0e0; margin: 0; padding: 20px; }
-        h1 { text-align: center; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5); }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .market-section { margin-bottom: 40px; background: #2d2d2d; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .market-title { font-size: 1.5em; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 15px; color: #ffcc00; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
-        th { background-color: #333; color: #aaa; }
-        tr:hover { background-color: #383838; }
-        .long { color: #00ff88; font-weight: bold; }
-        .short { color: #ff4444; font-weight: bold; }
-        .timestamp { text-align: center; color: #888; font-size: 0.9em; margin-top: 20px; }
-        .loading { text-align: center; padding: 20px; font-style: italic; }
+        :root {
+            --primary-color: #1a1a2e;
+            --secondary-color: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e94560;
+        }
+
+        body {
+            background-color: var(--primary-color);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-header {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .signal-card {
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .signal-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .signal-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .buy-signal {
+            background-color: #28a745;
+        }
+
+        .sell-signal {
+            background-color: #dc3545;
+        }
+
+        .stats-card {
+            background-color: var(--accent-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .chart-container {
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .nav-link {
+            color: #fff !important;
+        }
+
+        .nav-link:hover {
+            color: var(--text-color) !important;
+        }
+
+        .table-dark {
+            background-color: var(--secondary-color);
+        }
+
+        .table-dark th,
+        .table-dark td {
+            border-color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+            .signal-card {
+                margin-bottom: 15px;
+            }
+        }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <h1>🚀 SUPERMEN V16.0 DASHBOARD</h1>
-        <div class="timestamp" id="lastUpdate">Veriler Yükleniyor...</div>
-
-        <!-- CRYPTO -->
-        <div class="market-section">
-            <div class="market-title">💎 KRİPTO PARALAR</div>
-            <div id="crypto-container" class="loading">Veri bekleniyor...</div>
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Trading Signal Dashboard
+                    </h1>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-success" id="connectionStatus">
+                        <i class="fas fa-circle me-1"></i>
+                        Aktif
+                    </span>
+                </div>
+            </div>
         </div>
+    </header>
 
-        <!-- BIST -->
-        <div class="market-section">
-            <div class="market-title">📈 BIST HİSSELERİ</div>
-            <div id="bist-container" class="loading">Veri bekleniyor...</div>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#signals">Sinyaller</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#statistics">İstatistikler</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#history">Geçmiş</a>
+                    </li>
+                </ul>
+            </div>
         </div>
+    </nav>
 
-        <!-- FOREX -->
-        <div class="market-section">
-            <div class="market-title">💱 FOREX PARİTELERİ</div>
-            <div id="forex-container" class="loading">Veri bekleniyor...</div>
-        </div>
-    </div>
+    <!-- Main Content -->
+    <main class="container mt-4">
+        <!-- Statistics Cards -->
+        <section id="statistics" class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-2">Toplam Sinyal</h5>
+                    <div class="stats-value" id="totalSignals">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-2">Başarı Oranı</h5>
+                    <div class="stats-value" id="successRate">0%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-2">Aktif Sinyal</h5>
+                    <div class="stats-value" id="activeSignals">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-2">Son Güncelleme</h5>
+                    <div class="stats-value" id="lastUpdate">-</div>
+                </div>
+            </div>
+        </section>
 
+        <!-- Signals Section -->
+        <section id="signals" class="row">
+            <div class="col-12">
+                <h2 class="h4 mb-3">Aktif Sinyaller</h2>
+                <div id="signalsContainer">
+                    <!-- Signals will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section id="history" class="row mt-4">
+            <div class="col-12">
+                <h2 class="h4 mb-3">Sinyal Geçmişi</h2>
+                <div class="table-responsive">
+                    <table class="table table-dark">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Çift</th>
+                                <th>Tip</th>
+                                <th>Fiyat</th>
+                                <th>Kar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            <!-- History will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Veri yükleme fonksiyonu
         async function loadData() {
             try {
-                // GitHub'dan ham JSON verisini çek
-                const response = await fetch('data/signals.json?t=' + new Date().getTime());
-                const data = await response.json();
-                
-                document.getElementById('lastUpdate').innerText = 'Son Güncelleme: ' + new Date().toLocaleString("tr-TR");
+                const [signalsResponse, statsResponse] = await Promise.all([
+                    fetch('signals.json'),
+                    fetch('stats.json')
+                ]);
 
-                renderTable('crypto', data.crypto);
-                renderTable('bist', data.bist);
-                renderTable('forex', data.forex);
+                const signals = await signalsResponse.json();
+                const stats = await statsResponse.json();
 
+                updateStatistics(stats);
+                displaySignals(signals);
+                updateHistory(signals);
             } catch (error) {
-                console.error('Hata:', error);
-                document.getElementById('lastUpdate').innerText = 'Veri okunamadı veya dosya henüz oluşmadı.';
+                console.error('Veri yükleme hatası:', error);
             }
         }
 
-        function renderTable(type, signals) {
-            const container = document.getElementById(type + '-container');
-            if (!signals || signals.length === 0) {
-                container.innerHTML = '<div style="padding:10px; color:#888;">🚫 Şu an uygun sinyal yok.</div>';
-                return;
-            }
+        // İstatistikleri güncelle
+        function updateStatistics(stats) {
+            document.getElementById('totalSignals').textContent = stats.total || 0;
+            document.getElementById('successRate').textContent = stats.successRate || '0%';
+            document.getElementById('activeSignals').textContent = stats.active || 0;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('tr-TR');
+        }
 
-            let html = '<table><thead><tr><th>Sembol</th><th>Yön</th><th>Giriş</th><th>Hedef 1</th><th>Hedef 2</th><th>Stop</th><th>St (H4/D1/W1)</th></tr></thead><tbody>';
-            
-            signals.forEach(s => {
-                const dirClass = s.direction === 1 ? 'long' : 'short';
-                const dirText = s.direction === 1 ? 'AL (LONG)' : 'SAT (SHORT)';
-                
-                html += `<tr>
-                    <td><b>${s.symbol}</b></td>
-                    <td class="${dirClass}">${dirText}</td>
-                    <td>${s.entryPrice.toFixed(type === 'crypto' && s.entryPrice < 1 ? 4 : 2)}</td>
-                    <td>${s.tp1.toFixed(type === 'crypto' && s.tp1 < 1 ? 4 : 2)}</td>
-                    <td>${s.tp2.toFixed(type === 'crypto' && s.tp2 < 1 ? 4 : 2)}</td>
-                    <td>${s.sl.toFixed(type === 'crypto' && s.sl < 1 ? 4 : 2)}</td>
-                    <td>${s.stochKStr}</td>
-                </tr>`;
+        // Sinyalleri göster
+        function displaySignals(signals) {
+            const container = document.getElementById('signalsContainer');
+            container.innerHTML = '';
+
+            signals.forEach(signal => {
+                const card = document.createElement('div');
+                card.className = 'signal-card';
+                card.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <h5>${signal.pair}</h5>
+                            <span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">
+                                ${signal.type}
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-0">Fiyat: ${signal.price}</p>
+                            <p class="mb-0">Hedef: ${signal.target}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <p class="mb-0">Zaman: ${new Date(signal.time).toLocaleString('tr-TR')}</p>
+                            <p class="mb-0">Güç: ${signal.strength}%</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
             });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
         }
 
-        // Sayfa açılınca yükle
-        loadData();
-        // Her 60 saniyede bir yenile
-        setInterval(loadData, 60000);
+        // Geçmişi güncelle
+        function updateHistory(signals) {
+            const tbody = document.getElementById('historyTable');
+            tbody.innerHTML = '';
+
+            signals.slice(0, 10).forEach(signal => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(signal.time).toLocaleString('tr-TR')}</td>
+                    <td>${signal.pair}</td>
+                    <td><span class="signal-badge ${signal.type === 'BUY' ? 'buy-signal' : 'sell-signal'}">${signal.type}</span></td>
+                    <td>${signal.price}</td>
+                    <td>${signal.profit || '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Sayfa yüklendiğinde verileri getir
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        // Her 30 saniyede bir verileri güncelle
+        setInterval(loadData, 30000);
     </script>
 </body>
 </html>
