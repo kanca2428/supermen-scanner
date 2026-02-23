@@ -1,16 +1,16 @@
-var CONFIG = require("./config");
-var apis = require("./apis");
-var fetchCandles = apis.fetchCandles;
+var CONFIG   = require("./config");
+var apis     = require("./apis");
+var fetchCandles   = apis.fetchCandles;
+var getCurrentPrice = apis.getCurrentPrice;
 
 // ═══════════════════════════════════════════════════════════════════
 // 1. STOCHASTIC HESAPLAMA
-// candles: [en_eski, ..., en_yeni] sırasında olmali
-// apis.js ters getiriyor (en yeni önce) → burada düzeltiyoruz
+// candles: apis.js [en yeni → en eski] getiriyor → burada ters çeviriyoruz
 // ═══════════════════════════════════════════════════════════════════
 function calculateStochastic(candlesRaw, kPeriod, dPeriod, slowing) {
   if (!candlesRaw || candlesRaw.length < kPeriod + slowing + dPeriod + 3) return null;
 
-  // apis.js [en yeni → en eski] getiriyor, ters çevir → [en eski → en yeni]
+  // [en yeni → en eski] → [en eski → en yeni]
   var candles = candlesRaw.slice().reverse();
   var len = candles.length;
 
@@ -44,10 +44,8 @@ function calculateStochastic(candlesRaw, kPeriod, dPeriod, slowing) {
   if (slowedK.length < 2 || dVal.length < 1) return null;
 
   return {
-    // Kapanmış son mumun değeri (sondan bir önceki)
-    k: slowedK[slowedK.length - 2],
-    d: dVal[dVal.length - 1],
-    // Tüm dizi (display için)
+    k:    slowedK[slowedK.length - 2], // Kapanmış son mumun değeri
+    d:    dVal[dVal.length - 1],
     kArr: slowedK,
     dArr: dVal
   };
@@ -55,14 +53,12 @@ function calculateStochastic(candlesRaw, kPeriod, dPeriod, slowing) {
 
 // ═══════════════════════════════════════════════════════════════════
 // 2. ATR HESAPLAMA
-// candles: apis.js formatında [en yeni → en eski]
+// candles: [en yeni → en eski] formatında
 // ═══════════════════════════════════════════════════════════════════
 function calculateATR(candlesRaw, period) {
   if (!candlesRaw || candlesRaw.length < period + 2) return 0;
 
-  // En yeni period+1 mumu al (en yeniden başla)
   var candles = candlesRaw.slice(0, period + 1);
-
   var trs = [];
   for (var i = 0; i < period; i++) {
     var curr = candles[i];
@@ -78,8 +74,8 @@ function calculateATR(candlesRaw, period) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3. PIVOT HESAPLAMA
-// Bir önceki mumun H/L/C'sinden klasik pivot
+// 3. PIVOT HESAPLAMA (Classic)
+// Bir önceki mumun H/L/C'sinden hesaplanır
 // ═══════════════════════════════════════════════════════════════════
 function calculatePivotPoints(candle) {
   if (!candle) return null;
@@ -100,40 +96,35 @@ function calculatePivotPoints(candle) {
 
 // ═══════════════════════════════════════════════════════════════════
 // 4. PIVOT ZONE KONTROL
-// SELL: fiyat >= R1 → resistance zone'da
-// BUY:  fiyat <= S1 → support zone'da
-// proximity: R1'e yaklaşırken daha erken yakalamak için tolerans
+// SELL: fiyat >= R1 → resistance zone
+// BUY:  fiyat <= S1 → support zone
 // ═══════════════════════════════════════════════════════════════════
 function checkPivotZone(price, pivots, direction, proximityPct) {
   if (!pivots) return false;
   var tol = price * (proximityPct / 100);
-
-  if (direction === 1) {
-    // BUY: fiyat S1 veya altında
-    return price <= pivots.s1 + tol;
-  } else {
-    // SELL: fiyat R1 veya üzerinde
-    return price >= pivots.r1 - tol;
-  }
+  if (direction === 1)  return price <= pivots.s1 + tol;  // BUY: S1 veya altı
+  if (direction === -1) return price >= pivots.r1 - tol;  // SELL: R1 veya üstü
+  return false;
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // ANA ANALİZ FONKSİYONU
 // ═══════════════════════════════════════════════════════════════════
 async function analyzeSingleSymbol(symbol) {
+
   // Market tipini belirle
   var marketType = "CRYPTO";
-  if (CONFIG.BIST_SYMBOLS.includes(symbol))  marketType = "BIST";
+  if (CONFIG.BIST_SYMBOLS.includes(symbol))   marketType = "BIST";
   else if (CONFIG.FOREX_PAIRS.includes(symbol)) marketType = "FOREX";
 
-  var tfs    = ["H4", "D1", "W1"];
+  var tfs     = ["H4", "D1", "W1"];
   var results = [];
   var lastCandlesH4 = null;
 
   for (var t = 0; t < tfs.length; t++) {
     var tf = tfs[t];
 
-    // W1 için daha fazla mum çek (Stoch K21 + slowing + D için min 35 lazım)
+    // Her TF için yeterli mum çek
     var limit = tf === "W1" ? 60 : tf === "D1" ? 80 : 120;
 
     var candles = await fetchCandles(symbol, marketType, tf, limit);
@@ -141,7 +132,7 @@ async function analyzeSingleSymbol(symbol) {
 
     if (tf === "H4") lastCandlesH4 = candles;
 
-    // ── Stochastic ──
+    // ── Stochastic kontrolü ──
     var stoch = calculateStochastic(
       candles,
       CONFIG.STOCH_K_PERIOD,
@@ -150,18 +141,15 @@ async function analyzeSingleSymbol(symbol) {
     );
     if (!stoch) return null;
 
-    var k = stoch.k;
+    var k   = stoch.k;
     var dir = k <= CONFIG.STOCH_OS_LEVEL ? 1 : (k >= CONFIG.STOCH_OB_LEVEL ? -1 : 0);
     if (dir === 0) return null; // Bu TF'de stoch nötr → AND bozuldu, iptal
 
-    // ── Pivot Zone ──
+    // ── Pivot Zone kontrolü ──
     var usePivot = CONFIG["PIVOT_USE_" + tf];
     if (usePivot) {
-      // candles[0] = en yeni (kapanmış son mum değil, devam eden)
-      // candles[1] = kapanmış son mum → pivot referansı için
-      // candles[2] = bir önceki → pivot hesabı için
       var currentPrice = candles[0].close;
-      var prevCandle   = candles[1]; // Kapanmış son mumun H/L/C'si
+      var prevCandle   = candles[1]; // Kapanmış son mum
       var pivots       = calculatePivotPoints(prevCandle);
       var proximity    = CONFIG.SR_PROXIMITY_PERCENT || 1.0;
 
@@ -171,17 +159,25 @@ async function analyzeSingleSymbol(symbol) {
     results.push({ tf: tf, dir: dir, k: k });
   }
 
-  // AND kontrolü: 3 TF hepsi aynı yönde olmalı
+  // AND kontrolü: H4 + D1 + W1 hepsi aynı yönde olmalı
   if (results.length < 3) return null;
   if (results[0].dir !== results[1].dir || results[1].dir !== results[2].dir) return null;
 
   var direction = results[0].dir;
 
-  if (!lastCandlesH4 || lastCandlesH4.length < 5) return null;
-  var entry = lastCandlesH4[0].close;
-  var atr   = calculateATR(lastCandlesH4, CONFIG.ATR_PERIOD);
+  // ── GERÇEK ZAMANLI FİYAT (entry için) ──
+  // Binance/Bybit/KuCoin/CryptoCompare'den anlık fiyat çek
+  // Başarısız olursa H4 son kapanışını kullan (fallback)
+  var entry = await getCurrentPrice(symbol, marketType);
+  if (!entry || entry <= 0) {
+    entry = lastCandlesH4[0].close; // Fallback
+  }
+
+  // ── ATR hesapla ──
+  var atr = calculateATR(lastCandlesH4, CONFIG.ATR_PERIOD);
   if (!atr || atr <= 0) return null;
 
+  // ── SL / TP hesapla ──
   var sl  = direction === 1 ? entry - (atr * CONFIG.ATR_MULTIPLIER_SL)  : entry + (atr * CONFIG.ATR_MULTIPLIER_SL);
   var tp1 = direction === 1 ? entry + (atr * CONFIG.ATR_TP1_MULTIPLIER) : entry - (atr * CONFIG.ATR_TP1_MULTIPLIER);
   var tp2 = direction === 1 ? entry + (atr * CONFIG.ATR_TP2_MULTIPLIER) : entry - (atr * CONFIG.ATR_TP2_MULTIPLIER);
@@ -189,17 +185,17 @@ async function analyzeSingleSymbol(symbol) {
   var stochKStr = results.map(function(r) { return Math.round(r.k); }).join("/");
 
   return {
-    symbol:      symbol,
-    marketType:  marketType,
-    direction:   direction,
-    signal:      direction === 1 ? "LONG" : "SHORT",
-    entryPrice:  entry,
-    sl:          sl,
-    tp1:         tp1,
-    tp2:         tp2,
-    atr:         atr,
-    stochKStr:   stochKStr,
-    score:       100
+    symbol:     symbol,
+    marketType: marketType,
+    direction:  direction,
+    signal:     direction === 1 ? "LONG" : "SHORT",
+    entryPrice: entry,
+    sl:         sl,
+    tp1:        tp1,
+    tp2:        tp2,
+    atr:        atr,
+    stochKStr:  stochKStr,
+    score:      100
   };
 }
 
