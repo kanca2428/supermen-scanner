@@ -24,8 +24,8 @@ module.exports = {
   STOCH_SLOWING:  3,
   STOCH_OB_LEVEL: 80.0,   // 85 üstü = SELL sinyali
   STOCH_OS_LEVEL: 20.0,   // 15 altı = BUY sinyali
-  STOCH_USE_M5:   false,
-  STOCH_USE_M15:  false,
+  STOCH_USE_M5:   true,
+  STOCH_USE_M15:  true,
   STOCH_USE_H4:   true,
   STOCH_USE_D1:   true,
   STOCH_USE_W1:   true,
