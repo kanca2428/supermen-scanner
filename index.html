@@ -1,946 +1,262 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SUPERMEN V16.0 Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUPERMEN V16.0 Dashboard</title>
 
-  :root {
-    --bg-primary: #0a0e17;
-    --bg-card: #111827;
-    --bg-card-hover: #1a2332;
-    --border: #1e293b;
-    --text-primary: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --green: #10b981;
-    --green-bg: rgba(16, 185, 129, 0.1);
-    --red: #ef4444;
-    --red-bg: rgba(239, 68, 68, 0.1);
-    --blue: #3b82f6;
-    --blue-bg: rgba(59, 130, 246, 0.1);
-    --yellow: #f59e0b;
-    --yellow-bg: rgba(245, 158, 11, 0.1);
-    --purple: #8b5cf6;
-  }
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-dark.min.css" rel="stylesheet">
 
-  body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    min-height: 100vh;
-  }
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-  .header {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border-bottom: 1px solid var(--border);
-    padding: 20px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  .header-left h1 {
-    font-size: 24px;
-    font-weight: 700;
-    background: linear-gradient(90deg, var(--blue), var(--purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #121212; /* Daha koyu bir arkaplan */
+        }
 
-  .header-left .subtitle {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
+        .navbar {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            background-color: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(10px);
+        }
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
 
-  .status-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-  }
+        .navbar-brand .fa-rocket {
+            color: #00ff88;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+        }
 
-  .status-badge.online {
-    background: var(--green-bg);
-    color: var(--green);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-  }
+        .card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease-in-out;
+        }
 
-  .status-badge.offline {
-    background: var(--red-bg);
-    color: var(--red);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-  }
+        .card:hover {
+            transform: translateY(-5px);
+        }
 
-  .pulse {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    animation: pulse 2s infinite;
-  }
+        .card-header {
+            background-color: #282828;
+            border-bottom: 1px solid #333;
+            font-weight: 600;
+        }
 
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-  }
+        .table-dark {
+            background-color: #1e1e1e;
+        }
 
-  .refresh-btn {
-    background: var(--blue);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s;
-  }
+        .table-hover > tbody > tr:hover {
+            background-color: #2a2a2a;
+        }
 
-  .refresh-btn:hover {
-    background: #2563eb;
-    transform: scale(1.05);
-  }
+        .long {
+            color: #28a745;
+            font-weight: bold;
+        }
 
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-  }
+        .short {
+            color: #dc3545;
+            font-weight: bold;
+        }
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
+        .long .fa-arrow-up, .short .fa-arrow-down {
+            margin-right: 5px;
+        }
 
-  .stat-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.3s;
-  }
+        tr.long-row {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left: 3px solid #28a745;
+        }
+        tr.short-row {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 3px solid #dc3545;
+        }
 
-  .stat-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--blue);
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
-  }
+        .timestamp {
+            font-size: 0.9em;
+        }
 
-  .stat-card .label {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-  }
+        .loading-spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 0;
+            color: #888;
+        }
 
-  .stat-card .value {
-    font-size: 28px;
-    font-weight: 700;
-  }
-
-  .stat-card .change {
-    font-size: 12px;
-    margin-top: 4px;
-  }
-
-  .stat-card.green .value { color: var(--green); }
-  .stat-card.red .value { color: var(--red); }
-  .stat-card.blue .value { color: var(--blue); }
-  .stat-card.yellow .value { color: var(--yellow); }
-
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .chart-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
-
-  .chart-card h3 {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .chart-wrapper {
-    position: relative;
-    height: 250px;
-  }
-
-  .market-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .market-tab {
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.2s;
-  }
-
-  .market-tab:hover {
-    border-color: var(--blue);
-    color: var(--text-primary);
-  }
-
-  .market-tab.active {
-    background: var(--blue-bg);
-    border-color: var(--blue);
-    color: var(--blue);
-  }
-
-  .market-tab .count {
-    background: var(--blue);
-    color: white;
-    font-size: 11px;
-    padding: 2px 7px;
-    border-radius: 10px;
-    margin-left: 6px;
-  }
-
-  .signals-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .signals-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .signals-header h3 {
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .signal-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .signal-table th {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    background: rgba(30, 41, 59, 0.5);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .signal-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid rgba(30, 41, 59, 0.3);
-    font-size: 13px;
-  }
-
-  .signal-table tr:hover td {
-    background: var(--bg-card-hover);
-  }
-
-  .direction-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 12px;
-  }
-
-  .direction-badge.long {
-    background: var(--green-bg);
-    color: var(--green);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-  }
-
-  .direction-badge.short {
-    background: var(--red-bg);
-    color: var(--red);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-  }
-
-  .score-bar {
-    width: 60px;
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    display: inline-block;
-    vertical-align: middle;
-    margin-left: 6px;
-  }
-
-  .score-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.5s;
-  }
-
-  .price-cell {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 12px;
-  }
-
-  .symbol-cell {
-    font-weight: 700;
-    font-size: 14px;
-  }
-
-  .sentiment-container {
-    text-align: center;
-    padding: 20px;
-  }
-
-  .sentiment-emoji {
-    font-size: 48px;
-    margin-bottom: 8px;
-  }
-
-  .sentiment-text {
-    font-size: 18px;
-    font-weight: 700;
-  }
-
-  .no-data {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-  }
-
-  .no-data .icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-  }
-
-  .no-data .msg {
-    font-size: 14px;
-  }
-
-  .footer {
-    text-align: center;
-    padding: 20px;
-    color: var(--text-muted);
-    font-size: 12px;
-    border-top: 1px solid var(--border);
-    margin-top: 40px;
-  }
-
-  @media (max-width: 768px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .header { padding: 16px; }
-    .container { padding: 12px; }
-    .signal-table { font-size: 11px; }
-    .signal-table th, .signal-table td { padding: 8px 10px; }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .fade-in {
-    animation: fadeIn 0.4s ease-out;
-  }
-</style>
+        .footer {
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+            background-color: #1a1a1a;
+            margin-top: 40px;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-dark text-light">
 
-<div class="header">
-  <div class="header-left">
-    <h1>🚀 SUPERMEN V16.0</h1>
-    <div class="subtitle">Multi-TF Stochastic Scanner • GitHub Actions</div>
-  </div>
-  <div class="header-right">
-    <div id="statusBadge" class="status-badge offline">
-      <div class="pulse" style="background:var(--red)"></div>
-      <span>Yükleniyor...</span>
-    </div>
-    <div id="lastUpdate" style="font-size:12px;color:var(--text-muted)">--</div>
-    <button class="refresh-btn" onclick="loadAllData()">🔄 Yenile</button>
-  </div>
-</div>
-
-<div class="container">
-
-  <div class="stats-grid" id="statsGrid">
-    <div class="stat-card green">
-      <div class="label">🟢 AL Sinyalleri</div>
-      <div class="value" id="totalBuy">--</div>
-      <div class="change" style="color:var(--green)">Aktif LONG</div>
-    </div>
-    <div class="stat-card red">
-      <div class="label">🔴 SAT Sinyalleri</div>
-      <div class="value" id="totalSell">--</div>
-      <div class="change" style="color:var(--red)">Aktif SHORT</div>
-    </div>
-    <div class="stat-card blue">
-      <div class="label">📊 Toplam Taranan</div>
-      <div class="value" id="totalScanned">--</div>
-      <div class="change" style="color:var(--text-muted)">Sembol</div>
-    </div>
-    <div class="stat-card yellow">
-      <div class="label">⭐ En Yüksek Skor</div>
-      <div class="value" id="topScore">--</div>
-      <div class="change" id="topScoreSymbol" style="color:var(--yellow)">--</div>
-    </div>
-  </div>
-
-  <div class="charts-grid">
-    <div class="chart-card">
-      <h3>📊 Sinyal Dağılımı</h3>
-      <div class="chart-wrapper">
-        <canvas id="pieChart"></canvas>
-      </div>
-    </div>
-    <div class="chart-card">
-      <h3>📈 Sinyal Geçmişi (Son 24 Saat)</h3>
-      <div class="chart-wrapper">
-        <canvas id="lineChart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <div class="charts-grid">
-    <div class="chart-card">
-      <h3>🧭 Piyasa Duyarlılığı</h3>
-      <div class="sentiment-container" id="sentimentContainer">
-        <div class="sentiment-emoji" id="sentimentEmoji">⏳</div>
-        <div class="sentiment-text" id="sentimentText">Yükleniyor...</div>
-        <div style="margin-top:12px;font-size:13px;color:var(--text-muted)" id="sentimentDetail">--</div>
-      </div>
-    </div>
-    <div class="chart-card">
-      <h3>📊 Market Bazlı Sinyal Skoru</h3>
-      <div class="chart-wrapper">
-        <canvas id="barChart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <div class="market-tabs" id="marketTabs">
-    <div class="market-tab active" data-market="all" onclick="switchTab('all')">
-      📊 Tümü <span class="count" id="countAll">0</span>
-    </div>
-    <div class="market-tab" data-market="crypto" onclick="switchTab('crypto')">
-      🪙 Kripto <span class="count" id="countCrypto">0</span>
-    </div>
-    <div class="market-tab" data-market="forex" onclick="switchTab('forex')">
-      💱 Forex <span class="count" id="countForex">0</span>
-    </div>
-    <div class="market-tab" data-market="bist" onclick="switchTab('bist')">
-      🏦 BIST <span class="count" id="countBist">0</span>
-    </div>
-  </div>
-
-  <div class="signals-card fade-in">
-    <div class="signals-header">
-      <h3 id="signalsTitle">📡 Aktif Sinyaller</h3>
-      <div style="font-size:12px;color:var(--text-muted)" id="signalsInfo">--</div>
-    </div>
-    <div id="signalsBody">
-      <div class="no-data">
-        <div class="icon">📡</div>
-        <div class="msg">Veri yükleniyor...</div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<div class="footer">
-  ⚠️ Finansal tavsiye değildir • 🤖 SUPERMEN V16.0 • GitHub Actions ile çalışır
-</div>
-
-<script>
-// ═══════════════════════════════════════════════════════════════
-// DATA BASE URL
-// ═══════════════════════════════════════════════════════════════
-const DATA_BASE = (() => {
-  const loc = window.location;
-  if (loc.hostname.includes('github.io')) {
-    const parts = loc.pathname.split('/').filter(p => p);
-    const repo = parts[0] || '';
-    return `/${repo}/data`;
-  }
-  return './data';
-})();
-
-let allSignals = {};
-let historyData = [];
-let statusData = {};
-let currentTab = 'all';
-
-let pieChart = null;
-let lineChart = null;
-let barChart = null;
-
-// ═══════════════════════════════════════════════════════════════
-// VERİ YÜKLEME
-// ═══════════════════════════════════════════════════════════════
-async function loadJSON(filename) {
-  try {
-    const resp = await fetch(`${DATA_BASE}/${filename}?t=${Date.now()}`);
-    if (!resp.ok) {
-      console.warn(`${filename} yüklenemedi: ${resp.status}`);
-      return null;
-    }
-    return await resp.json();
-  } catch (e) {
-    console.warn(`${filename} yüklenemedi:`, e.message);
-    return null;
-  }
-}
-
-async function loadAllData() {
-  try {
-    const [signals, history, status] = await Promise.all([
-      loadJSON('signals.json'),
-      loadJSON('history.json'),
-      loadJSON('status.json')
-    ]);
-
-    if (signals) allSignals = signals;
-    if (history) historyData = history;
-    if (status) statusData = status;
-
-    updateUI();
-    updateStatus(true);
-  } catch (e) {
-    console.error('Veri yükleme hatası:', e);
-    updateStatus(false);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// UI GÜNCELLEME
-// ═══════════════════════════════════════════════════════════════
-function updateUI() {
-  updateStats();
-  updateCharts();
-  updateSentiment();
-  renderSignals();
-}
-
-function updateStatus(online) {
-  const badge = document.getElementById('statusBadge');
-  const lastUp = document.getElementById('lastUpdate');
-
-  if (online) {
-    badge.className = 'status-badge online';
-    badge.innerHTML = '<div class="pulse"></div><span>Aktif</span>';
-    const lastRun = statusData?.lastRun;
-    if (lastRun) {
-      const d = new Date(lastRun);
-      lastUp.textContent = `Son: ${d.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}`;
-    }
-  } else {
-    badge.className = 'status-badge offline';
-    badge.innerHTML = '<div class="pulse" style="background:var(--red)"></div><span>Bağlantı Yok</span>';
-  }
-}
-
-function updateStats() {
-  let totalBuy = 0, totalSell = 0, totalScanned = 0;
-  let topScore = 0, topSymbol = '--';
-
-  for (const market of ['crypto', 'forex', 'bist']) {
-    const data = allSignals[market];
-    if (!data) continue;
-    
-    totalScanned += data.scanned || 0;
-    
-    for (const s of (data.signals || [])) {
-      if (s.direction > 0 || s.signal === 'LONG') totalBuy++;
-      else totalSell++;
-      
-      if ((s.score || 0) > topScore) {
-        topScore = s.score || 0;
-        topSymbol = s.displaySymbol || s.symbol;
-      }
-    }
-  }
-
-  document.getElementById('totalBuy').textContent = totalBuy;
-  document.getElementById('totalSell').textContent = totalSell;
-  document.getElementById('totalScanned').textContent = totalScanned;
-  document.getElementById('topScore').textContent = topScore.toFixed(1);
-  document.getElementById('topScoreSymbol').textContent = topSymbol;
-
-  document.getElementById('countAll').textContent = totalBuy + totalSell;
-  document.getElementById('countCrypto').textContent = (allSignals.crypto?.signals?.length) || 0;
-  document.getElementById('countForex').textContent = (allSignals.forex?.signals?.length) || 0;
-  document.getElementById('countBist').textContent = (allSignals.bist?.signals?.length) || 0;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SENTIMENT
-// ═══════════════════════════════════════════════════════════════
-function updateSentiment() {
-  const summary = statusData?.summary;
-  const emoji = document.getElementById('sentimentEmoji');
-  const text = document.getElementById('sentimentText');
-  const detail = document.getElementById('sentimentDetail');
-
-  if (!summary?.overall) {
-    emoji.textContent = '❓';
-    text.textContent = 'Veri bekleniyor';
-    detail.textContent = 'Henüz piyasa özeti yok';
-    return;
-  }
-
-  const { buy, sell, total, sentiment } = summary.overall;
-
-  if (sentiment && sentiment.includes('GÜÇLÜ BOĞA')) {
-    emoji.textContent = '🐂🔥';
-    text.style.color = 'var(--green)';
-  } else if (sentiment && sentiment.includes('BOĞA')) {
-    emoji.textContent = '🐂';
-    text.style.color = 'var(--green)';
-  } else if (sentiment && sentiment.includes('GÜÇLÜ AYI')) {
-    emoji.textContent = '🐻🔥';
-    text.style.color = 'var(--red)';
-  } else if (sentiment && sentiment.includes('AYI')) {
-    emoji.textContent = '🐻';
-    text.style.color = 'var(--red)';
-  } else {
-    emoji.textContent = '↔️';
-    text.style.color = 'var(--yellow)';
-  }
-
-  text.textContent = sentiment ? sentiment.replace(/[🐂🐻↔️🔥]/g, '').trim() : 'NÖTR';
-  detail.textContent = `AL: ${buy || 0} | SAT: ${sell || 0} | Toplam: ${total || 0}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CHARTS
-// ═══════════════════════════════════════════════════════════════
-function updateCharts() {
-  updatePieChart();
-  updateLineChart();
-  updateBarChart();
-}
-
-function updatePieChart() {
-  const ctx = document.getElementById('pieChart').getContext('2d');
-  if (pieChart) pieChart.destroy();
-
-  let buyCount = 0, sellCount = 0;
-  for (const m of ['crypto', 'forex', 'bist']) {
-    for (const s of (allSignals[m]?.signals || [])) {
-      if (s.direction > 0 || s.signal === 'LONG') buyCount++;
-      else sellCount++;
-    }
-  }
-
-  pieChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['🟢 AL (LONG)', '🔴 SAT (SHORT)'],
-      datasets: [{
-        data: [buyCount, sellCount],
-        backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.8)'],
-        borderColor: ['#10b981', '#ef4444'],
-        borderWidth: 2,
-        hoverOffset: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#94a3b8', padding: 20, font: { size: 13 } }
-        }
-      },
-      cutout: '60%'
-    }
-  });
-}
-
-function updateLineChart() {
-  const ctx = document.getElementById('lineChart').getContext('2d');
-  if (lineChart) lineChart.destroy();
-
-  const summaries = Array.isArray(historyData) ? historyData.filter(h => h.type === 'summary') : [];
-  const labels = [];
-  const buyData = [];
-  const sellData = [];
-
-  const recent = summaries.slice(-20);
-  for (const s of recent) {
-    const d = new Date(s.timestamp);
-    labels.push(d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
-    buyData.push(s.buyCount || 0);
-    sellData.push(s.sellCount || 0);
-  }
-
-  if (labels.length === 0) {
-    labels.push('--');
-    buyData.push(0);
-    sellData.push(0);
-  }
-
-  lineChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'AL Sinyalleri',
-          data: buyData,
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16,185,129,0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 2
-        },
-        {
-          label: 'SAT Sinyalleri',
-          data: sellData,
-          borderColor: '#ef4444',
-          backgroundColor: 'rgba(239,68,68,0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 2
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: '#94a3b8', font: { size: 12 } } }
-      },
-      scales: {
-        x: {
-          ticks: { color: '#64748b', font: { size: 10 } },
-          grid: { color: 'rgba(30,41,59,0.5)' }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: '#64748b', stepSize: 1 },
-          grid: { color: 'rgba(30,41,59,0.5)' }
-        }
-      }
-    }
-  });
-}
-
-function updateBarChart() {
-  const ctx = document.getElementById('barChart').getContext('2d');
-  if (barChart) barChart.destroy();
-
-  const markets = ['crypto', 'forex', 'bist'];
-  const labels = ['🪙 Kripto', '💱 Forex', '🏦 BIST'];
-  const scores = markets.map(m => {
-    const sigs = allSignals[m]?.signals || [];
-    if (sigs.length === 0) return 0;
-    return sigs.reduce((sum, s) => sum + (s.score || 0), 0) / sigs.length;
-  });
-
-  barChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Ortalama Skor',
-        data: scores,
-        backgroundColor: [
-          'rgba(245,158,11,0.7)',
-          'rgba(59,130,246,0.7)',
-          'rgba(139,92,246,0.7)'
-        ],
-        borderColor: ['#f59e0b', '#3b82f6', '#8b5cf6'],
-        borderWidth: 2,
-        borderRadius: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          ticks: { color: '#94a3b8', font: { size: 13 } },
-          grid: { display: false }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: '#64748b' },
-          grid: { color: 'rgba(30,41,59,0.5)' }
-        }
-      }
-    }
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAB DEĞİŞTİRME
-// ═══════════════════════════════════════════════════════════════
-function switchTab(market) {
-  currentTab = market;
-  document.querySelectorAll('.market-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.market === market);
-  });
-  renderSignals();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SİNYAL TABLOSU
-// ═══════════════════════════════════════════════════════════════
-function renderSignals() {
-  const body = document.getElementById('signalsBody');
-  const title = document.getElementById('signalsTitle');
-  const info = document.getElementById('signalsInfo');
-
-  let signals = [];
-
-  if (currentTab === 'all') {
-    for (const m of ['crypto', 'forex', 'bist']) {
-      for (const s of (allSignals[m]?.signals || [])) {
-        signals.push({ ...s, _market: m });
-      }
-    }
-    title.textContent = '📡 Tüm Aktif Sinyaller';
-  } else {
-    const data = allSignals[currentTab];
-    signals = (data?.signals || []).map(s => ({ ...s, _market: currentTab }));
-    const icons = { crypto: '🪙', forex: '💱', bist: '🏦' };
-    title.textContent = `${icons[currentTab] || '📡'} ${currentTab.toUpperCase()} Sinyalleri`;
-  }
-
-  signals.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-  if (signals.length === 0) {
-    body.innerHTML = `
-      <div class="no-data">
-        <div class="icon">📡</div>
-        <div class="msg">Aktif sinyal bulunamadı</div>
-        <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
-          Scanner çalışınca sinyaller burada görünecek
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-rocket"></i>
+                SUPERMEN V16.0
+            </a>
+            <span class="navbar-text timestamp" id="lastUpdate">
+                Veriler Yükleniyor...
+            </span>
         </div>
-      </div>`;
-    info.textContent = '0 sinyal';
-    return;
-  }
+    </nav>
 
-  info.textContent = `${signals.length} sinyal`;
+    <!-- Main Content -->
+    <div class="container mt-5">
 
-  let html = `<table class="signal-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Sembol</th>
-        <th>Yön</th>
-        <th>Giriş</th>
-        <th>Stop Loss</th>
-        <th>TP1</th>
-        <th>TP2</th>
-        <th>Skor</th>
-        <th>Stoch</th>
-      </tr>
-    </thead>
-    <tbody>`;
+        <!-- CRYPTO -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="fab fa-bitcoin me-2" style="color:#ffcc00;"></i> KRİPTO PARALAR</h3>
+            </div>
+            <div class="card-body">
+                <div id="crypto-container">
+                    <div class="loading-spinner-container">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-3">Veri bekleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  signals.forEach((s, i) => {
-    const isLong = s.direction > 0 || s.signal === 'LONG';
-    const dirClass = isLong ? 'long' : 'short';
-    const dirText = isLong ? '▲ LONG' : '▼ SHORT';
-    const marketIcon = { crypto: '🪙', forex: '💱', bist: '🏦' }[s._market] || '';
+        <!-- BIST -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-line me-2" style="color:#00aaff;"></i> BIST HİSSELERİ</h3>
+            </div>
+            <div class="card-body">
+                <div id="bist-container">
+                    <div class="loading-spinner-container">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-3">Veri bekleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    const score = s.score || 100;
-    const scorePercent = Math.min(score / 200 * 100, 100);
-    const scoreColor = score > 150 ? 'var(--green)' : score > 100 ? 'var(--yellow)' : 'var(--blue)';
+        <!-- FOREX -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-dollar-sign me-2" style="color:#28a745;"></i> FOREX PARİTELERİ</h3>
+            </div>
+            <div class="card-body">
+                <div id="forex-container">
+                     <div class="loading-spinner-container">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-3">Veri bekleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    html += `<tr class="fade-in" style="animation-delay:${i * 0.05}s">
-      <td style="color:var(--text-muted)">${i + 1}</td>
-      <td class="symbol-cell">${marketIcon} ${s.displaySymbol || s.symbol}</td>
-      <td><span class="direction-badge ${dirClass}">${dirText}</span></td>
-      <td class="price-cell">${formatPrice(s.entryPrice || s.lastPrice)}</td>
-      <td class="price-cell" style="color:var(--red)">${formatPrice(s.stopLoss || s.sl)}</td>
-      <td class="price-cell" style="color:var(--green)">${formatPrice(s.tp1)}</td>
-      <td class="price-cell" style="color:var(--green)">${formatPrice(s.tp2)}</td>
-      <td>
-        <span style="font-weight:700">${score.toFixed(1)}</span>
-        <div class="score-bar"><div class="score-bar-fill" style="width:${scorePercent}%;background:${scoreColor}"></div></div>
-      </td>
-      <td style="font-size:12px;color:var(--text-muted)">${s.stochK || s.stochKStr || '--'}</td>
-    </tr>`;
-  });
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            SUPERMEN SCANNER &copy; 2026 | Tüm Hakları Saklıdır
+        </div>
+    </footer>
 
-  html += '</tbody></table>';
-  body.innerHTML = html;
-}
 
-// ═══════════════════════════════════════════════════════════════
-// FORMAT YARDIMCILARI
-// ═══════════════════════════════════════════════════════════════
-function formatPrice(p) {
-  if (p == null || isNaN(p)) return 'N/A';
-  const a = Math.abs(p);
-  if (a >= 100) return p.toFixed(2);
-  if (a >= 1) return p.toFixed(4);
-  if (a >= 0.01) return p.toFixed(6);
-  return p.toFixed(8);
-}
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-// ═══════════════════════════════════════════════════════════════
-// AUTO REFRESH
-// ═══════════════════════════════════════════════════════════════
-loadAllData();
-setInterval(loadAllData, 60000);
-</script>
+    <script>
+        async function loadData() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/kanca2428/supermen-scanner/main/data/signals.json?t=' + new Date().getTime());
+                 if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                document.getElementById('lastUpdate').innerText = 'Son Güncelleme: ' + new Date().toLocaleString("tr-TR");
 
+                renderTable('crypto', data.crypto);
+                renderTable('bist', data.bist);
+                renderTable('forex', data.forex);
+
+            } catch (error) {
+                console.error('Veri yükleme hatası:', error);
+                document.getElementById('lastUpdate').innerText = 'Veri okunamadı veya dosya henüz oluşmadı.';
+                const errorMsg = `<div class="alert alert-danger">Sinyal verileri yüklenemedi. Lütfen daha sonra tekrar deneyin.</div>`;
+                document.getElementById('crypto-container').innerHTML = errorMsg;
+                document.getElementById('bist-container').innerHTML = errorMsg;
+                document.getElementById('forex-container').innerHTML = errorMsg;
+            }
+        }
+
+        function renderTable(type, signals) {
+            const container = document.getElementById(type + '-container');
+            if (!signals || signals.length === 0) {
+                container.innerHTML = '<div class="alert alert-secondary text-center">🚫 Şu an uygun sinyal yok.</div>';
+                return;
+            }
+
+            let tableHtml = '<div class="table-responsive"><table class="table table-dark table-hover align-middle"><thead><tr><th>Sembol</th><th>Yön</th><th>Giriş</th><th>Hedef 1</th><th>Hedef 2</th><th>Stop</th><th>Stokastik (H4/D1/W1)</th></tr></thead><tbody>';
+            
+            signals.forEach(s => {
+                const isLong = s.direction === 1;
+                const dirClass = isLong ? 'long' : 'short';
+                const dirIcon = isLong ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+                const dirText = isLong ? 'AL (LONG)' : 'SAT (SHORT)';
+                const rowClass = isLong ? 'long-row' : 'short-row';
+
+                const formatPrice = (price) => {
+                    if (type === 'crypto' && price < 1) return price.toFixed(4);
+                    return price.toFixed(2);
+                };
+                
+                tableHtml += `<tr class="${rowClass}">
+                    <td class="${dirClass}"><b>${s.symbol}</b></td>
+                    <td class="${dirClass}">${dirIcon}${dirText}</td>
+                    <td>${formatPrice(s.entryPrice)}</td>
+                    <td>${formatPrice(s.tp1)}</td>
+                    <td>${formatPrice(s.tp2)}</td>
+                    <td>${formatPrice(s.sl)}</td>
+                    <td>${s.stochKStr}</td>
+                </tr>`;
+            });
+
+            tableHtml += '</tbody></table></div>';
+            container.innerHTML = tableHtml;
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', loadData);
+        // Refresh every 60 seconds
+        setInterval(loadData, 60000);
+    </script>
 </body>
 </html>
