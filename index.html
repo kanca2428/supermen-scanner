@@ -34,7 +34,6 @@
     min-height: 100vh;
   }
 
-  /* ── Header ──────────────────────────────────────────── */
   .header {
     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     border-bottom: 1px solid var(--border);
@@ -52,6 +51,7 @@
     background: linear-gradient(90deg, var(--blue), var(--purple));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .header-left .subtitle {
@@ -113,9 +113,12 @@
     font-weight: 600;
     transition: all 0.2s;
   }
-  .refresh-btn:hover { background: #2563eb; transform: scale(1.05); }
 
-  /* ── Grid Layout ─────────────────────────────────────── */
+  .refresh-btn:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+  }
+
   .container {
     max-width: 1400px;
     margin: 0 auto;
@@ -136,6 +139,7 @@
     padding: 20px;
     transition: all 0.3s;
   }
+
   .stat-card:hover {
     transform: translateY(-2px);
     border-color: var(--blue);
@@ -165,7 +169,6 @@
   .stat-card.blue .value { color: var(--blue); }
   .stat-card.yellow .value { color: var(--yellow); }
 
-  /* ── Charts Row ──────────────────────────────────────── */
   .charts-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -194,7 +197,6 @@
     height: 250px;
   }
 
-  /* ── Market Tabs ─────────────────────────────────────── */
   .market-tabs {
     display: flex;
     gap: 8px;
@@ -213,7 +215,12 @@
     font-size: 14px;
     transition: all 0.2s;
   }
-  .market-tab:hover { border-color: var(--blue); color: var(--text-primary); }
+
+  .market-tab:hover {
+    border-color: var(--blue);
+    color: var(--text-primary);
+  }
+
   .market-tab.active {
     background: var(--blue-bg);
     border-color: var(--blue);
@@ -229,7 +236,6 @@
     margin-left: 6px;
   }
 
-  /* ── Signal Table ────────────────────────────────────── */
   .signals-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -285,11 +291,13 @@
     font-weight: 700;
     font-size: 12px;
   }
+
   .direction-badge.long {
     background: var(--green-bg);
     color: var(--green);
     border: 1px solid rgba(16, 185, 129, 0.3);
   }
+
   .direction-badge.short {
     background: var(--red-bg);
     color: var(--red);
@@ -306,6 +314,7 @@
     vertical-align: middle;
     margin-left: 6px;
   }
+
   .score-bar-fill {
     height: 100%;
     border-radius: 3px;
@@ -322,7 +331,6 @@
     font-size: 14px;
   }
 
-  /* ── Sentiment Gauge ─────────────────────────────────── */
   .sentiment-container {
     text-align: center;
     padding: 20px;
@@ -338,16 +346,21 @@
     font-weight: 700;
   }
 
-  /* ── No Data ─────────────────────────────────────────── */
   .no-data {
     text-align: center;
     padding: 60px 20px;
     color: var(--text-muted);
   }
-  .no-data .icon { font-size: 48px; margin-bottom: 12px; }
-  .no-data .msg { font-size: 14px; }
 
-  /* ── Footer ──────────────────────────────────────────── */
+  .no-data .icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  .no-data .msg {
+    font-size: 14px;
+  }
+
   .footer {
     text-align: center;
     padding: 20px;
@@ -357,7 +370,6 @@
     margin-top: 40px;
   }
 
-  /* ── Responsive ──────────────────────────────────────── */
   @media (max-width: 768px) {
     .charts-grid { grid-template-columns: 1fr; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -367,33 +379,22 @@
     .signal-table th, .signal-table td { padding: 8px 10px; }
   }
 
-  /* ── Animations ──────────────────────────────────────── */
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .fade-in { animation: fadeIn 0.4s ease-out; }
 
-  .skeleton {
-    background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-    height: 20px;
-  }
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+  .fade-in {
+    animation: fadeIn 0.4s ease-out;
   }
 </style>
 </head>
 <body>
 
-<!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
 <div class="header">
   <div class="header-left">
     <h1>🚀 SUPERMEN V16.0</h1>
-    <div class="subtitle">Multi-TF St Scanner • GitHub Actions</div>
+    <div class="subtitle">Multi-TF Stochastic Scanner • GitHub Actions</div>
   </div>
   <div class="header-right">
     <div id="statusBadge" class="status-badge offline">
@@ -405,10 +406,8 @@
   </div>
 </div>
 
-<!-- ═══ CONTAINER ═════════════════════════════════════════════════════ -->
 <div class="container">
 
-  <!-- ── Stats Row ─────────────────────────────────────────────────── -->
   <div class="stats-grid" id="statsGrid">
     <div class="stat-card green">
       <div class="label">🟢 AL Sinyalleri</div>
@@ -432,17 +431,13 @@
     </div>
   </div>
 
-  <!-- ── Charts Row ────────────────────────────────────────────────── -->
   <div class="charts-grid">
-    <!-- Sinyal Dağılımı Pie -->
     <div class="chart-card">
       <h3>📊 Sinyal Dağılımı</h3>
       <div class="chart-wrapper">
         <canvas id="pieChart"></canvas>
       </div>
     </div>
-
-    <!-- Sinyal Geçmişi Line -->
     <div class="chart-card">
       <h3>📈 Sinyal Geçmişi (Son 24 Saat)</h3>
       <div class="chart-wrapper">
@@ -451,7 +446,6 @@
     </div>
   </div>
 
-  <!-- ── Sentiment + Market Summary ────────────────────────────────── -->
   <div class="charts-grid">
     <div class="chart-card">
       <h3>🧭 Piyasa Duyarlılığı</h3>
@@ -461,8 +455,6 @@
         <div style="margin-top:12px;font-size:13px;color:var(--text-muted)" id="sentimentDetail">--</div>
       </div>
     </div>
-
-    <!-- Market Score Distribution Bar -->
     <div class="chart-card">
       <h3>📊 Market Bazlı Sinyal Skoru</h3>
       <div class="chart-wrapper">
@@ -471,7 +463,6 @@
     </div>
   </div>
 
-  <!-- ── Market Tabs + Signals ─────────────────────────────────────── -->
   <div class="market-tabs" id="marketTabs">
     <div class="market-tab active" data-market="all" onclick="switchTab('all')">
       📊 Tümü <span class="count" id="countAll">0</span>
@@ -502,27 +493,22 @@
 
 </div>
 
-<!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
 <div class="footer">
-  ⚠️ Finansal tavsiye değildir • 🤖 SUPERMEN V15.0 • GitHub Actions ile çalışır
+  ⚠️ Finansal tavsiye değildir • 🤖 SUPERMEN V16.0 • GitHub Actions ile çalışır
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- JAVASCRIPT -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
 <script>
-// ── Ayarlar ───────────────────────────────────────────────────────────
-// GitHub Pages URL'ini buraya yaz (veya otomatik algıla)
+// ═══════════════════════════════════════════════════════════════
+// DATA BASE URL
+// ═══════════════════════════════════════════════════════════════
 const DATA_BASE = (() => {
-  // GitHub Pages'deyse: /repo-name/data/
-  // Lokalde: ../data/
   const loc = window.location;
   if (loc.hostname.includes('github.io')) {
-    const parts = loc.pathname.split('/');
-    const repo = parts[1] || '';
+    const parts = loc.pathname.split('/').filter(p => p);
+    const repo = parts[0] || '';
     return `/${repo}/data`;
   }
-  return '../data';
+  return './data';
 })();
 
 let allSignals = {};
@@ -530,19 +516,23 @@ let historyData = [];
 let statusData = {};
 let currentTab = 'all';
 
-// Chart instances
 let pieChart = null;
 let lineChart = null;
 let barChart = null;
 
-// ── Veri Yükleme ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// VERİ YÜKLEME
+// ═══════════════════════════════════════════════════════════════
 async function loadJSON(filename) {
   try {
     const resp = await fetch(`${DATA_BASE}/${filename}?t=${Date.now()}`);
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.warn(`${filename} yüklenemedi: ${resp.status}`);
+      return null;
+    }
     return await resp.json();
   } catch (e) {
-    console.warn(`${filename} yüklenemedi:`, e);
+    console.warn(`${filename} yüklenemedi:`, e.message);
     return null;
   }
 }
@@ -567,7 +557,9 @@ async function loadAllData() {
   }
 }
 
-// ── UI Güncelleme ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// UI GÜNCELLEME
+// ═══════════════════════════════════════════════════════════════
 function updateUI() {
   updateStats();
   updateCharts();
@@ -600,11 +592,17 @@ function updateStats() {
   for (const market of ['crypto', 'forex', 'bist']) {
     const data = allSignals[market];
     if (!data) continue;
+    
     totalScanned += data.scanned || 0;
+    
     for (const s of (data.signals || [])) {
-      if (s.direction > 0) totalBuy++;
+      if (s.direction > 0 || s.signal === 'LONG') totalBuy++;
       else totalSell++;
-      if (s.score > topScore) { topScore = s.score; topSymbol = s.displaySymbol; }
+      
+      if ((s.score || 0) > topScore) {
+        topScore = s.score || 0;
+        topSymbol = s.displaySymbol || s.symbol;
+      }
     }
   }
 
@@ -614,14 +612,15 @@ function updateStats() {
   document.getElementById('topScore').textContent = topScore.toFixed(1);
   document.getElementById('topScoreSymbol').textContent = topSymbol;
 
-  // Tab counts
   document.getElementById('countAll').textContent = totalBuy + totalSell;
   document.getElementById('countCrypto').textContent = (allSignals.crypto?.signals?.length) || 0;
   document.getElementById('countForex').textContent = (allSignals.forex?.signals?.length) || 0;
   document.getElementById('countBist').textContent = (allSignals.bist?.signals?.length) || 0;
 }
 
-// ── Sentiment ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// SENTIMENT
+// ═══════════════════════════════════════════════════════════════
 function updateSentiment() {
   const summary = statusData?.summary;
   const emoji = document.getElementById('sentimentEmoji');
@@ -637,16 +636,16 @@ function updateSentiment() {
 
   const { buy, sell, total, sentiment } = summary.overall;
 
-  if (sentiment.includes('GÜÇLÜ BOĞA')) {
+  if (sentiment && sentiment.includes('GÜÇLÜ BOĞA')) {
     emoji.textContent = '🐂🔥';
     text.style.color = 'var(--green)';
-  } else if (sentiment.includes('BOĞA')) {
+  } else if (sentiment && sentiment.includes('BOĞA')) {
     emoji.textContent = '🐂';
     text.style.color = 'var(--green)';
-  } else if (sentiment.includes('GÜÇLÜ AYI')) {
+  } else if (sentiment && sentiment.includes('GÜÇLÜ AYI')) {
     emoji.textContent = '🐻🔥';
     text.style.color = 'var(--red)';
-  } else if (sentiment.includes('AYI')) {
+  } else if (sentiment && sentiment.includes('AYI')) {
     emoji.textContent = '🐻';
     text.style.color = 'var(--red)';
   } else {
@@ -654,11 +653,13 @@ function updateSentiment() {
     text.style.color = 'var(--yellow)';
   }
 
-  text.textContent = sentiment.replace(/[🐂🐻↔️🔥]/g, '').trim();
-  detail.textContent = `AL: ${buy} | SAT: ${sell} | Toplam: ${total}`;
+  text.textContent = sentiment ? sentiment.replace(/[🐂🐻↔️🔥]/g, '').trim() : 'NÖTR';
+  detail.textContent = `AL: ${buy || 0} | SAT: ${sell || 0} | Toplam: ${total || 0}`;
 }
 
-// ── Charts ────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════════
 function updateCharts() {
   updatePieChart();
   updateLineChart();
@@ -669,14 +670,10 @@ function updatePieChart() {
   const ctx = document.getElementById('pieChart').getContext('2d');
   if (pieChart) pieChart.destroy();
 
-  const cryptoCount = allSignals.crypto?.signals?.length || 0;
-  const forexCount = allSignals.forex?.signals?.length || 0;
-  const bistCount = allSignals.bist?.signals?.length || 0;
-
   let buyCount = 0, sellCount = 0;
   for (const m of ['crypto', 'forex', 'bist']) {
     for (const s of (allSignals[m]?.signals || [])) {
-      if (s.direction > 0) buyCount++;
+      if (s.direction > 0 || s.signal === 'LONG') buyCount++;
       else sellCount++;
     }
   }
@@ -711,13 +708,11 @@ function updateLineChart() {
   const ctx = document.getElementById('lineChart').getContext('2d');
   if (lineChart) lineChart.destroy();
 
-  // History'den summary kayıtlarını çek
-  const summaries = historyData.filter(h => h.type === 'summary');
+  const summaries = Array.isArray(historyData) ? historyData.filter(h => h.type === 'summary') : [];
   const labels = [];
   const buyData = [];
   const sellData = [];
 
-  // Son 20 kayıt
   const recent = summaries.slice(-20);
   for (const s of recent) {
     const d = new Date(s.timestamp);
@@ -765,9 +760,7 @@ function updateLineChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          labels: { color: '#94a3b8', font: { size: 12 } }
-        }
+        legend: { labels: { color: '#94a3b8', font: { size: 12 } } }
       },
       scales: {
         x: {
@@ -793,7 +786,7 @@ function updateBarChart() {
   const scores = markets.map(m => {
     const sigs = allSignals[m]?.signals || [];
     if (sigs.length === 0) return 0;
-    return sigs.reduce((sum, s) => sum + s.score, 0) / sigs.length;
+    return sigs.reduce((sum, s) => sum + (s.score || 0), 0) / sigs.length;
   });
 
   barChart = new Chart(ctx, {
@@ -816,9 +809,7 @@ function updateBarChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
+      plugins: { legend: { display: false } },
       scales: {
         x: {
           ticks: { color: '#94a3b8', font: { size: 13 } },
@@ -834,7 +825,9 @@ function updateBarChart() {
   });
 }
 
-// ── Tab Değiştirme ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// TAB DEĞİŞTİRME
+// ═══════════════════════════════════════════════════════════════
 function switchTab(market) {
   currentTab = market;
   document.querySelectorAll('.market-tab').forEach(t => {
@@ -843,7 +836,9 @@ function switchTab(market) {
   renderSignals();
 }
 
-// ── Sinyal Tablosu ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// SİNYAL TABLOSU
+// ═══════════════════════════════════════════════════════════════
 function renderSignals() {
   const body = document.getElementById('signalsBody');
   const title = document.getElementById('signalsTitle');
@@ -865,7 +860,7 @@ function renderSignals() {
     title.textContent = `${icons[currentTab] || '📡'} ${currentTab.toUpperCase()} Sinyalleri`;
   }
 
-  signals.sort((a, b) => b.score - a.score);
+  signals.sort((a, b) => (b.score || 0) - (a.score || 0));
 
   if (signals.length === 0) {
     body.innerHTML = `
@@ -888,44 +883,39 @@ function renderSignals() {
         <th>#</th>
         <th>Sembol</th>
         <th>Yön</th>
-        <th>Fiyat</th>
+        <th>Giriş</th>
         <th>Stop Loss</th>
-        <th>Hedef 1</th>
-        <th>Hedef 2</th>
+        <th>TP1</th>
+        <th>TP2</th>
         <th>Skor</th>
-        <th>Hacim</th>
-        <th>R:R</th>
+        <th>Stoch</th>
       </tr>
     </thead>
     <tbody>`;
 
   signals.forEach((s, i) => {
-    const isLong = s.direction > 0;
+    const isLong = s.direction > 0 || s.signal === 'LONG';
     const dirClass = isLong ? 'long' : 'short';
     const dirText = isLong ? '▲ LONG' : '▼ SHORT';
     const marketIcon = { crypto: '🪙', forex: '💱', bist: '🏦' }[s._market] || '';
 
-    const sld = Math.abs((s.lastPrice || 0) - (s.stopLoss || 0));
-    const rr1 = sld > 0 ? (Math.abs((s.tp1 || 0) - (s.lastPrice || 0)) / sld).toFixed(1) : '--';
-    const rr2 = sld > 0 ? (Math.abs((s.tp2 || 0) - (s.lastPrice || 0)) / sld).toFixed(1) : '--';
-
-    const scorePercent = Math.min(s.score / 200 * 100, 100);
-    const scoreColor = s.score > 150 ? 'var(--green)' : s.score > 100 ? 'var(--yellow)' : 'var(--blue)';
+    const score = s.score || 100;
+    const scorePercent = Math.min(score / 200 * 100, 100);
+    const scoreColor = score > 150 ? 'var(--green)' : score > 100 ? 'var(--yellow)' : 'var(--blue)';
 
     html += `<tr class="fade-in" style="animation-delay:${i * 0.05}s">
       <td style="color:var(--text-muted)">${i + 1}</td>
-      <td class="symbol-cell">${marketIcon} ${s.displaySymbol}</td>
+      <td class="symbol-cell">${marketIcon} ${s.displaySymbol || s.symbol}</td>
       <td><span class="direction-badge ${dirClass}">${dirText}</span></td>
-      <td class="price-cell">${formatPrice(s.lastPrice)}</td>
-      <td class="price-cell" style="color:var(--red)">${formatPrice(s.stopLoss)}</td>
+      <td class="price-cell">${formatPrice(s.entryPrice || s.lastPrice)}</td>
+      <td class="price-cell" style="color:var(--red)">${formatPrice(s.stopLoss || s.sl)}</td>
       <td class="price-cell" style="color:var(--green)">${formatPrice(s.tp1)}</td>
       <td class="price-cell" style="color:var(--green)">${formatPrice(s.tp2)}</td>
       <td>
-        <span style="font-weight:700">${s.score?.toFixed(1)}</span>
+        <span style="font-weight:700">${score.toFixed(1)}</span>
         <div class="score-bar"><div class="score-bar-fill" style="width:${scorePercent}%;background:${scoreColor}"></div></div>
       </td>
-      <td style="color:var(--text-muted);font-size:12px">${formatVolume(s.vol24h)}</td>
-      <td style="font-size:12px">${rr1} / ${rr2}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${s.stochK || s.stochKStr || '--'}</td>
     </tr>`;
   });
 
@@ -933,7 +923,9 @@ function renderSignals() {
   body.innerHTML = html;
 }
 
-// ── Format Yardımcıları ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// FORMAT YARDIMCILARI
+// ═══════════════════════════════════════════════════════════════
 function formatPrice(p) {
   if (p == null || isNaN(p)) return 'N/A';
   const a = Math.abs(p);
@@ -943,17 +935,11 @@ function formatPrice(p) {
   return p.toFixed(8);
 }
 
-function formatVolume(v) {
-  if (!v || v <= 0) return 'N/A';
-  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
-  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
-  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
-  return '$' + v.toFixed(0);
-}
-
-// ── Auto Refresh ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// AUTO REFRESH
+// ═══════════════════════════════════════════════════════════════
 loadAllData();
-setInterval(loadAllData, 60000); // Her 1 dakikada yenile
+setInterval(loadAllData, 60000);
 </script>
 
 </body>
