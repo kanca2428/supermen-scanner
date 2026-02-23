@@ -1,1 +1,14 @@
-﻿{ "version": "V16.0" }
+{
+  "lastRun": null,
+  "lastRunTimestamp": 0,
+  "duration": 0,
+  "mode": "all",
+  "summary": {
+    "overall": {
+      "buy": 0,
+      "sell": 0,
+      "total": 0,
+      "sentiment": "NÖTR ↔️"
+    }
+  }
+}
