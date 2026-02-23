@@ -144,7 +144,6 @@ function buildMarketMessage(marketTitle, signals) {
     msg += "🎯 TP1: " + formatPrice(s.tp1, s.marketType) + "\n";
     msg += "🎯 TP2: " + formatPrice(s.tp2, s.marketType) + "\n";
     msg += "📉 AT: " + formatPrice(s.atr, s.marketType) + "\n";
-    msg += "📊 St: "supermen";
     msg += "━━━━━━━━━━━━━━━━━━━━━\n";
   }
 
