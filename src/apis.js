@@ -161,6 +161,78 @@ async function getKlinesKucoin(pair, tfKey, limit) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// CRYPTOCOMPARE KLINE — 4. Fallback (ücretsiz, 250k/ay)
+// H4  → histohour aggregate=4
+// D1  → histoday  aggregate=1
+// W1  → histoday  aggregate=7
+// Sembol: "BTC/USD" veya "BTCUSDT" → fsym=BTC, tsym=USDT
+// ═══════════════════════════════════════════════════════════════════
+async function getKlinesCryptoCompare(pair, tfKey, limit) {
+  // Base coin'i çıkar: "BTC/USD" → "BTC", "BTCUSDT" → "BTC"
+  var base;
+  if (pair.includes("/")) {
+    base = pair.split("/")[0];
+  } else {
+    // BTCUSDT → BTC (USDT, USDC, BTC, ETH bilinen suffix'leri çıkar)
+    base = pair.replace(/(USDT|USDC|BUSD|USD|BTC|ETH)$/, "") || pair.substring(0, pair.length - 4);
+  }
+  if (!base || base.length === 0) return null;
+
+  var tsym     = "USDT";
+  var endpoint = "";
+  var aggregate = 1;
+
+  if (tfKey === "H4") {
+    endpoint  = "histohour";
+    aggregate = 4;
+    limit     = limit || 200; // 200 × 4h = 800 saat
+  } else if (tfKey === "D1") {
+    endpoint  = "histoday";
+    aggregate = 1;
+    limit     = limit || 100;
+  } else if (tfKey === "W1") {
+    endpoint  = "histoday";
+    aggregate = 7;
+    limit     = limit || 60;
+  } else {
+    return null;
+  }
+
+  var apiKey = CONFIG.CRYPTOCOMPARE_API_KEY || "";
+  var url = "https://min-api.cryptocompare.com/data/v2/" + endpoint +
+            "?fsym=" + base +
+            "&tsym=" + tsym +
+            "&limit=" + limit +
+            "&aggregate=" + aggregate +
+            (apiKey ? "&api_key=" + apiKey : "");
+
+  var r = await safeFetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+
+  if (!r.ok || !r.data || r.data.Response === "Error") return null;
+  var list = r.data.Data && r.data.Data.Data;
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  // Sıfır mumları filtrele (coin henüz yoktu)
+  list = list.filter(function(d) { return d.close > 0; });
+  if (list.length < 10) return null;
+
+  // [en yeni → en eski] sırasına çevir (apis.js standardı)
+  var candles = [];
+  for (var i = list.length - 1; i >= 0; i--) {
+    var d = list[i];
+    candles.push({
+      time:   d.time,
+      open:   d.open,
+      high:   d.high,
+      low:    d.low,
+      close:  d.close,
+      volume: d.volumefrom || 0
+    });
+  }
+  return candles.length > 0 ? candles : null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // YAHOO KLINE (Forex + BIST)
 // ═══════════════════════════════════════════════════════════════════
 async function getKlinesYahoo(yahooSymbol, interval, range) {
@@ -215,6 +287,11 @@ async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
     // 3. Bybit'te de yoksa KuCoin dene
     if (!candles) {
       try { candles = await getKlinesKucoin(displaySymbol, tfKey, limit || 150); } catch (e) {}
+    }
+
+    // 4. KuCoin'da da yoksa CryptoCompare dene (250k/ay ucretsiz)
+    if (!candles) {
+      try { candles = await getKlinesCryptoCompare(displaySymbol, tfKey, limit || 150); } catch (e) {}
     }
 
   } else if (marketType === "BIST" || marketType === "FOREX") {
