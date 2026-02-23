@@ -1,19 +1,78 @@
 {
   "crypto": {
     "signals": [],
-    "scanned": 306,
+    "scanned": 89,
     "errors": 0,
     "market": "CRYPTO"
   },
   "forex": {
-    "signals": [],
-    "scanned": 28,
+    "signals": [
+      {
+        "symbol": "EURGBP",
+        "displaySymbol": "EURGBP",
+        "marketType": "FOREX",
+        "direction": -1,
+        "signal": "SHORT",
+        "entryPrice": 0.8747100234031677,
+        "lastPrice": 0.8747100234031677,
+        "stopLoss": 0.8765293274606977,
+        "sl": 0.8765293274606977,
+        "tp1": 0.8734971540314811,
+        "tp2": 0.8722842846597944,
+        "atr": 0.0006064346858433314,
+        "stochK": "93/93",
+        "stochKStr": "93/93",
+        "score": 130,
+        "tfCount": 2,
+        "timestamp": 1771809905104
+      },
+      {
+        "symbol": "GBPJPY",
+        "displaySymbol": "GBPJPY",
+        "marketType": "FOREX",
+        "direction": 1,
+        "signal": "LONG",
+        "entryPrice": 208.38699340820312,
+        "lastPrice": 208.38699340820312,
+        "stopLoss": 207.54377637590682,
+        "sl": 207.54377637590682,
+        "tp1": 208.94913809640067,
+        "tp2": 209.51128278459822,
+        "atr": 0.2810723440987723,
+        "stochK": "9/18",
+        "stochKStr": "9/18",
+        "score": 115,
+        "tfCount": 2,
+        "timestamp": 1771809905941
+      }
+    ],
+    "scanned": 21,
     "errors": 0,
     "market": "FOREX"
   },
   "bist": {
-    "signals": [],
-    "scanned": 503,
+    "signals": [
+      {
+        "symbol": "SKBNK",
+        "displaySymbol": "SKBNK",
+        "marketType": "BIST",
+        "direction": -1,
+        "signal": "SHORT",
+        "entryPrice": 11.609999656677246,
+        "lastPrice": 11.609999656677246,
+        "stopLoss": 11.96571411405291,
+        "sl": 11.96571411405291,
+        "tp1": 11.37285668509347,
+        "tp2": 11.135713713509697,
+        "atr": 0.11857148579188756,
+        "stochK": "88/93",
+        "stochKStr": "88/93",
+        "score": 125,
+        "tfCount": 2,
+        "timestamp": 1771809934337
+      }
+    ],
+    "scanned": 64,
     "errors": 0,
     "market": "BIST"
   }
