@@ -43,19 +43,15 @@ async function safeFetch(url, options) {
 // "BTC/USD" → exchange'e göre doğru formata çevirir
 // ═══════════════════════════════════════════════════════════════════
 function formatSymbol(pair, exchange) {
-  // Zaten slash yok ise (BTCUSDT gibi) dokunma
   if (!pair.includes("/")) return pair;
-
   var parts = pair.split("/");
   var base  = parts[0];
   var quote = parts[1];
-  var q     = (quote === "USD") ? "USDT" : quote; // USD → USDT
-
-  if (exchange === "kucoin") return base + "-" + q;  // BTC-USDT
-  return base + q;                                    // BTCUSDT (Binance/Bybit)
+  var q     = (quote === "USD") ? "USDT" : quote;
+  if (exchange === "kucoin") return base + "-" + q;
+  return base + q;
 }
 
-// Eski fonksiyon — geriye dönük uyumluluk için bırakıldı
 function toBinanceSymbol(pair) {
   return formatSymbol(pair, "binance");
 }
@@ -64,6 +60,67 @@ function toYahooSymbol(displaySymbol, marketType) {
   if (marketType === "BIST")  return displaySymbol.includes(".IS") ? displaySymbol : displaySymbol + ".IS";
   if (marketType === "FOREX") return displaySymbol.includes("=X")  ? displaySymbol : displaySymbol + "=X";
   return displaySymbol;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GERÇEK ZAMANLI FİYAT — Entry fiyatı için kullanılır
+// Binance → Bybit → KuCoin → CryptoCompare sırasıyla dener
+// ═══════════════════════════════════════════════════════════════════
+async function getCurrentPrice(pair, marketType) {
+  if (marketType === "CRYPTO") {
+    // 1. Binance
+    try {
+      var sym = formatSymbol(pair, "binance");
+      var r = await safeFetch(CONFIG.BINANCE_BASE + "/api/v3/ticker/price?symbol=" + sym);
+      if (r.ok && r.data && r.data.price) return parseFloat(r.data.price);
+    } catch (e) {}
+
+    // 2. Bybit
+    try {
+      var sym2 = formatSymbol(pair, "bybit");
+      var r2 = await safeFetch(CONFIG.BYBIT_BASE + "/v5/market/tickers?category=spot&symbol=" + sym2);
+      if (r2.ok && r2.data && r2.data.result && r2.data.result.list && r2.data.result.list[0])
+        return parseFloat(r2.data.result.list[0].lastPrice);
+    } catch (e) {}
+
+    // 3. KuCoin
+    try {
+      var sym3 = formatSymbol(pair, "kucoin");
+      var r3 = await safeFetch(CONFIG.KUCOIN_BASE + "/api/v1/market/orderbook/level1?symbol=" + sym3);
+      if (r3.ok && r3.data && r3.data.data && r3.data.data.price)
+        return parseFloat(r3.data.data.price);
+    } catch (e) {}
+
+    // 4. CryptoCompare
+    try {
+      var base = pair.includes("/") ? pair.split("/")[0] : pair.replace(/(USDT|USDC|USD)$/, "");
+      var apiKey = CONFIG.CRYPTOCOMPARE_API_KEY || "";
+      var r4 = await safeFetch(
+        "https://min-api.cryptocompare.com/data/price?fsym=" + base + "&tsyms=USDT" +
+        (apiKey ? "&api_key=" + apiKey : "")
+      );
+      if (r4.ok && r4.data && r4.data.USDT) return parseFloat(r4.data.USDT);
+    } catch (e) {}
+  }
+
+  // FOREX / BIST için Yahoo'dan son kapanış fiyatı
+  if (marketType === "FOREX" || marketType === "BIST") {
+    try {
+      var yahooSym = toYahooSymbol(pair, marketType);
+      var r5 = await safeFetch(
+        "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(yahooSym) +
+        "?interval=1m&range=1d",
+        { headers: { "User-Agent": "Mozilla/5.0" } }
+      );
+      if (r5.ok && r5.data && r5.data.chart && r5.data.chart.result) {
+        var q = r5.data.chart.result[0].indicators.quote[0];
+        var closes = q.close.filter(function(v) { return v != null; });
+        if (closes.length > 0) return closes[closes.length - 1];
+      }
+    } catch (e) {}
+  }
+
+  return null; // Tüm kaynaklar başarısız
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -78,7 +135,6 @@ async function getKlinesBinance(pair, tfKey, limit) {
             "&interval=" + interval + "&limit=" + limit;
   var r = await safeFetch(url);
 
-  // Invalid symbol hatası — bu coin Binance'de yok
   if (!r.ok || !Array.isArray(r.data)) return null;
   if (r.data.code && r.data.code === -1121) return null;
 
@@ -131,11 +187,10 @@ async function getKlinesBybit(pair, tfKey, limit) {
 // KUCOIN KLINE
 // ═══════════════════════════════════════════════════════════════════
 async function getKlinesKucoin(pair, tfKey, limit) {
-  var symbol  = formatSymbol(pair, "kucoin");
-  var tfCfg   = CONFIG.KUCOIN_TF_MAP ? CONFIG.KUCOIN_TF_MAP[tfKey] : null;
+  var symbol = formatSymbol(pair, "kucoin");
+  var tfCfg  = CONFIG.KUCOIN_TF_MAP ? CONFIG.KUCOIN_TF_MAP[tfKey] : null;
   if (!tfCfg) return null;
 
-  // KuCoin: startAt / endAt ile limit kadar mum çek
   var endAt   = Math.floor(Date.now() / 1000);
   var startAt = endAt - (limit * tfCfg.minutes * 60);
   var url     = CONFIG.KUCOIN_BASE + "/api/v1/market/candles?type=" + tfCfg.code +
@@ -161,62 +216,44 @@ async function getKlinesKucoin(pair, tfKey, limit) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CRYPTOCOMPARE KLINE — 4. Fallback (ücretsiz, 250k/ay)
-// H4  → histohour aggregate=4
-// D1  → histoday  aggregate=1
-// W1  → histoday  aggregate=7
-// Sembol: "BTC/USD" veya "BTCUSDT" → fsym=BTC, tsym=USDT
+// CRYPTOCOMPARE KLINE — 4. Fallback
 // ═══════════════════════════════════════════════════════════════════
 async function getKlinesCryptoCompare(pair, tfKey, limit) {
-  // Base coin'i çıkar: "BTC/USD" → "BTC", "BTCUSDT" → "BTC"
   var base;
   if (pair.includes("/")) {
     base = pair.split("/")[0];
   } else {
-    // BTCUSDT → BTC (USDT, USDC, BTC, ETH bilinen suffix'leri çıkar)
     base = pair.replace(/(USDT|USDC|BUSD|USD|BTC|ETH)$/, "") || pair.substring(0, pair.length - 4);
   }
   if (!base || base.length === 0) return null;
 
-  var tsym     = "USDT";
-  var endpoint = "";
+  var endpoint  = "";
   var aggregate = 1;
 
   if (tfKey === "H4") {
-    endpoint  = "histohour";
-    aggregate = 4;
-    limit     = limit || 200; // 200 × 4h = 800 saat
+    endpoint = "histohour"; aggregate = 4; limit = limit || 200;
   } else if (tfKey === "D1") {
-    endpoint  = "histoday";
-    aggregate = 1;
-    limit     = limit || 100;
+    endpoint = "histoday";  aggregate = 1; limit = limit || 100;
   } else if (tfKey === "W1") {
-    endpoint  = "histoday";
-    aggregate = 7;
-    limit     = limit || 60;
+    endpoint = "histoday";  aggregate = 7; limit = limit || 60;
   } else {
     return null;
   }
 
   var apiKey = CONFIG.CRYPTOCOMPARE_API_KEY || "";
   var url = "https://min-api.cryptocompare.com/data/v2/" + endpoint +
-            "?fsym=" + base +
-            "&tsym=" + tsym +
-            "&limit=" + limit +
-            "&aggregate=" + aggregate +
+            "?fsym=" + base + "&tsym=USDT&limit=" + limit + "&aggregate=" + aggregate +
             (apiKey ? "&api_key=" + apiKey : "");
 
   var r = await safeFetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-
   if (!r.ok || !r.data || r.data.Response === "Error") return null;
+
   var list = r.data.Data && r.data.Data.Data;
   if (!Array.isArray(list) || list.length === 0) return null;
 
-  // Sıfır mumları filtrele (coin henüz yoktu)
   list = list.filter(function(d) { return d.close > 0; });
   if (list.length < 10) return null;
 
-  // [en yeni → en eski] sırasına çevir (apis.js standardı)
   var candles = [];
   for (var i = list.length - 1; i >= 0; i--) {
     var d = list[i];
@@ -263,7 +300,7 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
 
 // ═══════════════════════════════════════════════════════════════════
 // ANA FETCH FONKSİYONU
-// CRYPTO: Binance dene → bulamazsa Bybit → bulamazsa KuCoin
+// CRYPTO: Binance → Bybit → KuCoin → CryptoCompare
 // FOREX / BIST: Yahoo Finance
 // ═══════════════════════════════════════════════════════════════════
 async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
@@ -276,20 +313,13 @@ async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
   var candles = null;
 
   if (marketType === "CRYPTO") {
-    // 1. Binance dene
     try { candles = await getKlinesBinance(displaySymbol, tfKey, limit || 150); } catch (e) {}
-
-    // 2. Binance'de yoksa Bybit dene
     if (!candles) {
       try { candles = await getKlinesBybit(displaySymbol, tfKey, limit || 150); } catch (e) {}
     }
-
-    // 3. Bybit'te de yoksa KuCoin dene
     if (!candles) {
       try { candles = await getKlinesKucoin(displaySymbol, tfKey, limit || 150); } catch (e) {}
     }
-
-    // 4. KuCoin'da da yoksa CryptoCompare dene (250k/ay ucretsiz)
     if (!candles) {
       try { candles = await getKlinesCryptoCompare(displaySymbol, tfKey, limit || 150); } catch (e) {}
     }
@@ -325,8 +355,9 @@ async function checkAPIHealth() {
 module.exports = {
   safeFetch,
   fetchCandles,
+  getCurrentPrice,
   checkAPIHealth,
   getCacheStats,
-  formatSymbol,      // Dışarıdan da kullanılabilir
-  toBinanceSymbol    // Geriye dönük uyumluluk
+  formatSymbol,
+  toBinanceSymbol
 };
