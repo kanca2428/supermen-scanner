@@ -1,34 +1,59 @@
-﻿name: SUPERMEN V16.0 Scanner
+name: SUPERMEN V16.0 Scanner
+
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Her 4 saatte bir çalış (UTC)
+    - cron: '0 */4 * * *'
   workflow_dispatch:
     inputs:
-      mode:
-        description: "Mode"
+      market:
+        description: 'Taranacak market (all/crypto/forex/bist)'
         required: false
-        default: "all"
-        type: choice
-        options: ["all", "crypto", "bist"]
-permissions:
-  contents: write
+        default: 'all'
+
 jobs:
   scan:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: "20" }
-      - run: npm install
-      - name: Run
-        run: node src/scanner.js ${{ github.event.inputs.mode || 'all' }}
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 📚 Install Dependencies
+        run: npm ci || npm install
+      
+      - name: 🚀 Run Scanner
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      - name: Commit
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "Bot"
-          git add data/ || true
-          git diff --staged --quiet || git commit -m "Update data"
-          git push || true
+          MARKET="${{ github.event.inputs.market || 'all' }}"
+          echo "🔍 Tarama başlıyor: $MARKET"
+          node src/scanner.js $MARKET
+      
+      - name: 📤 Commit & Push Results
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add data/*.json
+          
+          if git diff --staged --quiet; then
+            echo "📝 Değişiklik yok, commit atlanıyor"
+          else
+            TIMESTAMP=$(TZ='Europe/Istanbul' date '+%Y-%m-%d %H:%M')
+            git commit -m "🤖 Sinyal güncelleme: $TIMESTAMP"
+            git push
+            echo "✅ Değişiklikler push edildi"
+          fi
