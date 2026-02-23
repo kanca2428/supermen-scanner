@@ -28,21 +28,21 @@ module.exports = {
   STOCH_USE_M15:  false,
   STOCH_USE_H4:   true,
   STOCH_USE_D1:   true,
-  STOCH_USE_W1:   false,
+  STOCH_USE_W1:   true,
 
   // ═══════════════════════════════════════════════════════════════
   // PIVOT POINT AYARLARI (H4 + D1 + W1 AND SİSTEMİ)
   // ═══════════════════════════════════════════════════════════════
-  PIVOT_USE_H4:         true,
+  PIVOT_USE_H4:         false,
   PIVOT_USE_D1:         true,
-  PIVOT_USE_W1:         true,
+  PIVOT_USE_W1:         false,
   SR_PROXIMITY_PERCENT: 1.0,  // Fiyatın pivot seviyesine % yakınlık toleransı
 
   // ═══════════════════════════════════════════════════════════════
   // ATR AYARLARI
   // ═══════════════════════════════════════════════════════════════
   ATR_PERIOD:         14,
-  ATR_MULTIPLIER_SL:  5.0,
+  ATR_MULTIPLIER_SL:  3.0,
   ATR_TP1_MULTIPLIER: 2.0,
   ATR_TP2_MULTIPLIER: 4.0,
 
