@@ -348,27 +348,9 @@
 
     // ── Stoch string'ini pill'lere çevir ─────────────────────────
     // stochKStr örneği: "56/19/56" veya "B/S/B"
-    function renderStoch(s) {
-      if (!s || !s.stochKStr) return '<span style="color:var(--muted)">—</span>';
-      const parts   = String(s.stochKStr).split('/');
-      const tfNames = ['H4','D1','W1'];
-      let html = '<div class="stoch-cell">';
-      parts.forEach((v, i) => {
-        const num = parseFloat(v);
-        let cls = '';
-        if (!isNaN(num)) {
-          if (num <= 15) cls = 'buy';
-          else if (num >= 85) cls = 'sell';
-        } else {
-          if (v === 'B') cls = 'buy';
-          if (v === 'S') cls = 'sell';
-        }
-        const tf = tfNames[i] || ('TF' + (i+1));
-        html += `<span class="stoch-pill ${cls}">${tf}:${v}</span>`;
-      });
-      html += '</div>';
-      return html;
-    }
+   function renderStoch(s) {
+  return '<span style="color:var(--muted)">—</span>';
+}
 
     // ── Pivot zone'u çip olarak göster ───────────────────────────
     // pivotStr örneği: "SSS" veya "RRR" veya "SR."
