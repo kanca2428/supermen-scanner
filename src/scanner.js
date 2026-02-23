@@ -1,27 +1,15 @@
-// ═══════════════════════════════════════════════════════════════
-// SUPERMEN V16.0 - SCANNER MODULE
-// ═══════════════════════════════════════════════════════════════
-
 const fs = require("fs");
 const path = require("path");
 const CONFIG = require("./config");
 const analysis = require("./analysis");
 const telegram = require("./telegram");
 
-// ═══════════════════════════════════════════════════════════════
-// DATA KLASÖRÜ
-// ═══════════════════════════════════════════════════════════════
 const DATA_DIR = path.join(__dirname, "..", "data");
 
-// Klasör yoksa oluştur
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  console.log("📁 data klasörü oluşturuldu");
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DOSYA YAZMA FONKSİYONU
-// ═══════════════════════════════════════════════════════════════
 function writeJSON(filename, data) {
   try {
     const filepath = path.join(DATA_DIR, filename);
@@ -36,72 +24,80 @@ function readJSON(filename) {
   try {
     const filepath = path.join(DATA_DIR, filename);
     if (fs.existsSync(filepath)) {
-      const content = fs.readFileSync(filepath, "utf8");
-      return JSON.parse(content);
+      return JSON.parse(fs.readFileSync(filepath, "utf8"));
     }
-  } catch (error) {
-    console.error(`❌ Dosya okuma hatası (${filename}):`, error.message);
-  }
+  } catch (error) {}
   return null;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SLEEP FONKSİYONU
-// ═══════════════════════════════════════════════════════════════
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TEK MARKET TARAMA
+// DEBUG: İlk 5 sembol için detaylı log
 // ═══════════════════════════════════════════════════════════════
 async function scanMarket(market) {
   let symbols = [];
   
-  if (market === "crypto") {
-    symbols = CONFIG.CRYPTO_PAIRS;
-  } else if (market === "bist") {
-    symbols = CONFIG.BIST_SYMBOLS;
-  } else if (market === "forex") {
-    symbols = CONFIG.FOREX_PAIRS;
-  } else {
-    console.log(`⚠️ Bilinmeyen market: ${market}`);
-    return { signals: [], scanned: 0 };
-  }
+  if (market === "crypto") symbols = CONFIG.CRYPTO_PAIRS;
+  else if (market === "bist") symbols = CONFIG.BIST_SYMBOLS;
+  else if (market === "forex") symbols = CONFIG.FOREX_PAIRS;
+  else return { signals: [], scanned: 0 };
   
   const signals = [];
   let scanned = 0;
   let errors = 0;
   
-  console.log(`\n🔍 ${market.toUpperCase()} taranıyor (${symbols.length} sembol)...`);
-  console.log("━".repeat(50));
+  console.log(`\n${"═".repeat(60)}`);
+  console.log(`🔍 ${market.toUpperCase()} TARAMASI`);
+  console.log(`📊 Toplam sembol: ${symbols.length}`);
+  console.log(`📈 Stoch OS: ≤${CONFIG.STOCH_OS_LEVEL} | OB: ≥${CONFIG.STOCH_OB_LEVEL}`);
+  console.log(`${"═".repeat(60)}\n`);
   
-  for (const symbol of symbols) {
+  // İlk 5 sembol için debug mod
+  const debugCount = 5;
+  
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i];
+    const isDebug = i < debugCount;
+    
     try {
       scanned++;
       
-      // İlerleme göster
-      if (scanned % 20 === 0) {
-        console.log(`   İlerleme: ${scanned}/${symbols.length} (${((scanned/symbols.length)*100).toFixed(1)}%)`);
+      if (isDebug) {
+        console.log(`\n🔎 [${i+1}/${symbols.length}] ${symbol} analiz ediliyor...`);
+      } else if (scanned % 20 === 0) {
+        console.log(`   İlerleme: ${scanned}/${symbols.length}`);
       }
       
-      const result = await analysis.analyzeSingleSymbol(symbol);
+      const result = await analysis.analyzeSingleSymbol(symbol, isDebug);
       
       if (result) {
         signals.push(result);
-        console.log(`   ✅ Sinyal: ${symbol} - ${result.signal}`);
+        console.log(`\n✅ SİNYAL BULUNDU: ${symbol}`);
+        console.log(`   📍 Yön: ${result.signal}`);
+        console.log(`   💰 Giriş: ${result.entryPrice}`);
+        console.log(`   🛑 SL: ${result.stopLoss}`);
+        console.log(`   🎯 TP1: ${result.tp1}`);
+        console.log(`   📊 Stoch: ${result.stochK}`);
+        console.log(`   ⭐ Skor: ${result.score}\n`);
       }
       
-      // Rate limiting - her istek arasında bekle
-      await sleep(250);
+      await sleep(300);
       
     } catch (error) {
       errors++;
-      console.error(`   ❌ Hata (${symbol}): ${error.message}`);
+      if (isDebug) console.log(`   ❌ ${symbol}: ${error.message}`);
     }
   }
   
-  console.log(`\n📊 ${market.toUpperCase()} Sonuç: ${signals.length} sinyal / ${scanned} taranan / ${errors} hata`);
+  console.log(`\n${"─".repeat(60)}`);
+  console.log(`📊 ${market.toUpperCase()} SONUÇ:`);
+  console.log(`   ✅ Sinyal: ${signals.length}`);
+  console.log(`   📈 Taranan: ${scanned}`);
+  console.log(`   ❌ Hata: ${errors}`);
+  console.log(`${"─".repeat(60)}\n`);
   
   return {
     signals: signals,
@@ -111,133 +107,84 @@ async function scanMarket(market) {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ANA FONKSİYON
-// ═══════════════════════════════════════════════════════════════
 async function main() {
   console.log("\n");
-  console.log("╔════════════════════════════════════════════════════╗");
-  console.log("║       🚀 SUPERMEN V16.0 - SCANNER BAŞLATILIYOR     ║");
-  console.log("╚════════════════════════════════════════════════════╝");
+  console.log("╔════════════════════════════════════════════════════════════╗");
+  console.log("║         🚀 SUPERMEN V16.0 - DEBUG MODE                     ║");
+  console.log("╚════════════════════════════════════════════════════════════╝");
+  console.log("\n");
+  
+  console.log("📋 MEVCUT AYARLAR:");
+  console.log(`   • Stoch K Period: ${CONFIG.STOCH_K_PERIOD}`);
+  console.log(`   • Stoch Oversold: ≤${CONFIG.STOCH_OS_LEVEL}`);
+  console.log(`   • Stoch Overbought: ≥${CONFIG.STOCH_OB_LEVEL}`);
+  console.log(`   • Timeframes: ${(CONFIG.TIMEFRAMES || ["H4", "D1"]).join(", ")}`);
+  console.log(`   • Min TF Agreement: ${CONFIG.MIN_TF_AGREEMENT || 1}`);
+  console.log(`   • Pivot Filter: ${CONFIG.USE_PIVOT_FILTER ? "AÇIK" : "KAPALI"}`);
   console.log("\n");
   
   const startTime = Date.now();
-  
-  // Telegram durumunu kontrol et
-  const telegramToken = process.env.TELEGRAM_BOT_TOKEN || CONFIG.TELEGRAM_BOT_TOKEN;
-  const telegramChatId = process.env.TELEGRAM_CHAT_ID || CONFIG.TELEGRAM_CHAT_ID;
-  
-  console.log(`📱 Telegram Token: ${telegramToken ? "✅ Mevcut" : "❌ YOK"}`);
-  console.log(`📱 Telegram Chat ID: ${telegramChatId ? "✅ Mevcut" : "❌ YOK"}`);
-  
-  // Komut satırı argümanı
   const mode = process.argv[2] || "all";
-  console.log(`\n🎯 Tarama modu: ${mode.toUpperCase()}`);
   
-  // Hangi marketleri tara
   let marketsToScan = [];
+  if (mode === "all") marketsToScan = ["crypto", "forex", "bist"];
+  else if (["crypto", "forex", "bist"].includes(mode)) marketsToScan = [mode];
   
-  if (mode === "all") {
-    marketsToScan = ["crypto", "forex", "bist"];
-  } else if (["crypto", "forex", "bist"].includes(mode)) {
-    marketsToScan = [mode];
-  } else {
-    console.log(`⚠️ Geçersiz mod: ${mode}`);
-    console.log("Kullanım: node scanner.js [all|crypto|forex|bist]");
-    return;
-  }
-  
-  // Sonuçları topla
   const allResults = {
     crypto: { signals: [], scanned: 0 },
     forex: { signals: [], scanned: 0 },
     bist: { signals: [], scanned: 0 }
   };
   
-  // Her marketi tara
   for (const market of marketsToScan) {
     const result = await scanMarket(market);
     allResults[market] = result;
   }
   
-  // ═══════════════════════════════════════════════════════════════
-  // VERİLERİ KAYDET
-  // ═══════════════════════════════════════════════════════════════
-  
-  // signals.json - Dashboard için (eski format uyumlu)
+  // Kaydet
   writeJSON("signals.json", allResults);
   
-  // status.json - Durum bilgisi
+  // Status
   const statusData = {
     lastRun: new Date().toISOString(),
     lastRunTimestamp: Date.now(),
     duration: Date.now() - startTime,
     mode: mode,
-    summary: {
-      overall: {
-        buy: 0,
-        sell: 0,
-        total: 0,
-        sentiment: "NÖTR"
-      }
-    }
+    summary: { overall: { buy: 0, sell: 0, total: 0, sentiment: "NÖTR ↔️" } }
   };
   
-  // Toplam hesapla
   for (const market of ["crypto", "forex", "bist"]) {
     const signals = allResults[market]?.signals || [];
-    
     for (const s of signals) {
       statusData.summary.overall.total++;
-      if (s.direction === 1 || s.signal === "LONG") {
-        statusData.summary.overall.buy++;
-      } else {
-        statusData.summary.overall.sell++;
-      }
+      if (s.direction === 1) statusData.summary.overall.buy++;
+      else statusData.summary.overall.sell++;
     }
   }
   
-  // Sentiment belirle
   const { buy, sell, total } = statusData.summary.overall;
-  if (total === 0) {
-    statusData.summary.overall.sentiment = "NÖTR ↔️";
-  } else if (buy > sell * 2) {
-    statusData.summary.overall.sentiment = "GÜÇLÜ BOĞA 🐂🔥";
-  } else if (buy > sell) {
-    statusData.summary.overall.sentiment = "BOĞA 🐂";
-  } else if (sell > buy * 2) {
-    statusData.summary.overall.sentiment = "GÜÇLÜ AYI 🐻🔥";
-  } else if (sell > buy) {
-    statusData.summary.overall.sentiment = "AYI 🐻";
-  } else {
-    statusData.summary.overall.sentiment = "NÖTR ↔️";
-  }
+  if (total === 0) statusData.summary.overall.sentiment = "NÖTR ↔️";
+  else if (buy > sell * 2) statusData.summary.overall.sentiment = "GÜÇLÜ BOĞA 🐂🔥";
+  else if (buy > sell) statusData.summary.overall.sentiment = "BOĞA 🐂";
+  else if (sell > buy * 2) statusData.summary.overall.sentiment = "GÜÇLÜ AYI 🐻🔥";
+  else if (sell > buy) statusData.summary.overall.sentiment = "AYI 🐻";
   
   writeJSON("status.json", statusData);
   
-  // history.json - Geçmiş kayıtları
+  // History
   let history = readJSON("history.json") || [];
-  
   history.push({
     type: "summary",
     timestamp: new Date().toISOString(),
-    buyCount: statusData.summary.overall.buy,
-    sellCount: statusData.summary.overall.sell,
-    totalCount: statusData.summary.overall.total
+    buyCount: buy,
+    sellCount: sell,
+    totalCount: total
   });
-  
-  // Son 500 kayıt tut
-  if (history.length > 500) {
-    history = history.slice(-500);
-  }
-  
+  if (history.length > 500) history = history.slice(-500);
   writeJSON("history.json", history);
   
-  // ═══════════════════════════════════════════════════════════════
-  // TELEGRAM BİLDİRİMLERİ
-  // ═══════════════════════════════════════════════════════════════
-  
-  console.log("\n📱 Telegram bildirimleri gönderiliyor...");
+  // Telegram
+  console.log("\n📱 Telegram bildirimleri...");
   
   for (const market of marketsToScan) {
     const result = allResults[market];
@@ -245,52 +192,35 @@ async function main() {
     const marketTitle = market.toUpperCase();
     
     if (signals.length > 0) {
-      // Sinyal var - detaylı mesaj gönder
       const message = telegram.buildMarketMessage(marketTitle, signals);
       await telegram.sendTelegram(message);
     } else {
-      // Sinyal yok - bilgi mesajı
       const now = new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
-      const noSignalMsg = `🚫 <b>${marketTitle} TARAMASI</b>\n\n` +
-        `Şu an kriterlere uygun sinyal bulunamadı.\n\n` +
-        `📊 Taranan: ${result?.scanned || 0} sembol\n` +
+      await telegram.sendTelegram(
+        `🚫 <b>${marketTitle} TARAMASI</b>\n\n` +
+        `Kriterlere uygun sinyal bulunamadı.\n\n` +
+        `📊 Taranan: ${result?.scanned || 0}\n` +
         `⏰ ${now}\n\n` +
-        `🤖 SUPERMEN V16.0`;
-      
-      await telegram.sendTelegram(noSignalMsg);
+        `🤖 SUPERMEN V16.0`
+      );
     }
-    
-    // Telegram rate limit
     await sleep(1000);
   }
   
-  // Özet mesaj (eğer tüm marketler tarandıysa)
-  if (mode === "all") {
-    const summaryMsg = telegram.buildSummaryMessage(allResults);
-    await telegram.sendTelegram(summaryMsg);
-  }
-  
-  // ═══════════════════════════════════════════════════════════════
-  // BİTİŞ
-  // ═══════════════════════════════════════════════════════════════
-  
+  // Özet
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
   
   console.log("\n");
-  console.log("╔════════════════════════════════════════════════════╗");
-  console.log("║           🏁 TARAMA TAMAMLANDI                     ║");
-  console.log("╚════════════════════════════════════════════════════╝");
+  console.log("╔════════════════════════════════════════════════════════════╗");
+  console.log("║                   🏁 TARAMA TAMAMLANDI                     ║");
+  console.log("╚════════════════════════════════════════════════════════════╝");
   console.log(`\n⏱️  Süre: ${duration} saniye`);
-  console.log(`📊 Toplam Sinyal: ${statusData.summary.overall.total}`);
-  console.log(`🟢 LONG: ${statusData.summary.overall.buy}`);
-  console.log(`🔴 SHORT: ${statusData.summary.overall.sell}`);
-  console.log(`📈 Duyarlılık: ${statusData.summary.overall.sentiment}`);
+  console.log(`📊 Toplam Sinyal: ${total}`);
+  console.log(`🟢 LONG: ${buy}`);
+  console.log(`🔴 SHORT: ${sell}`);
   console.log("\n");
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ÇALIŞTIR
-// ═══════════════════════════════════════════════════════════════
 main().catch(error => {
   console.error("❌ Kritik hata:", error);
   process.exit(1);
