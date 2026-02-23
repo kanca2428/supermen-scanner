@@ -1,16 +1,30 @@
-﻿{
-  "name": "supermen-scanner",
+{
+  "name": "supermen-v16",
   "version": "16.0.0",
-  "description": "SUPERMEN V16.0 - Crypto & BIST Scanner",
+  "description": "SUPERMEN V16.0 - Multi-Timeframe Stochastic Scanner",
   "main": "src/scanner.js",
   "scripts": {
     "start": "node src/scanner.js all",
+    "scan": "node src/scanner.js all",
     "scan:crypto": "node src/scanner.js crypto",
+    "scan:forex": "node src/scanner.js forex",
     "scan:bist": "node src/scanner.js bist",
-    "scan:all": "node src/scanner.js all",
-    "test": "node src/scanner.js test"
+    "test": "node src/scanner.js crypto"
   },
+  "keywords": [
+    "trading",
+    "crypto",
+    "forex",
+    "bist",
+    "stochastic",
+    "scanner"
+  ],
+  "author": "SUPERMEN",
+  "license": "MIT",
   "dependencies": {
-    "axios": "^1.7.0"
+    "axios": "^1.6.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
