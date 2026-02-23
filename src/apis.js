@@ -1,28 +1,13 @@
-// ═══════════════════════════════════════════════════════════════
-// SUPERMEN V16.0 - API MODULE
-// ═══════════════════════════════════════════════════════════════
-
 const axios = require("axios");
 const CONFIG = require("./config");
 
-// ═══════════════════════════════════════════════════════════════
-// CACHE SİSTEMİ
-// ═══════════════════════════════════════════════════════════════
 const memCache = {};
-const CACHE_TTL = { 
-  M5: 300, 
-  M15: 900, 
-  H4: 7200, 
-  D1: 21600, 
-  W1: 43200 
-};
+const CACHE_TTL = { H1: 3600, H4: 7200, D1: 21600, W1: 43200 };
 
 function getCached(key) {
   const entry = memCache[key];
   if (!entry) return null;
-  
-  const ttl = entry.ttl || 900;
-  if (Date.now() - entry.time > ttl * 1000) {
+  if (Date.now() - entry.time > (entry.ttl || 900) * 1000) {
     delete memCache[key];
     return null;
   }
@@ -30,22 +15,7 @@ function getCached(key) {
 }
 
 function setCache(key, data, ttlSec) {
-  memCache[key] = { 
-    data: data, 
-    time: Date.now(), 
-    ttl: ttlSec || 900 
-  };
-}
-
-function getCacheStats() {
-  return { 
-    total: Object.keys(memCache).length,
-    keys: Object.keys(memCache)
-  };
-}
-
-function clearCache() {
-  Object.keys(memCache).forEach(key => delete memCache[key]);
+  memCache[key] = { data: data, time: Date.now(), ttl: ttlSec || 900 };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -57,9 +27,8 @@ async function safeFetch(url, options = {}) {
       url: url,
       method: options.method || "get",
       headers: options.headers || {},
-      data: options.data || undefined,
-      timeout: options.timeout || 15000,
-      validateStatus: function() { return true; }
+      timeout: options.timeout || 10000,
+      validateStatus: () => true
     });
     
     return { 
@@ -68,13 +37,7 @@ async function safeFetch(url, options = {}) {
       ok: resp.status === 200 
     };
   } catch (e) {
-    console.error(`API Hatası (${url}):`, e.message);
-    return { 
-      code: 0, 
-      data: null, 
-      ok: false, 
-      error: e.message 
-    };
+    return { code: 0, data: null, ok: false, error: e.message };
   }
 }
 
@@ -83,20 +46,23 @@ async function safeFetch(url, options = {}) {
 // ═══════════════════════════════════════════════════════════════
 async function getKlinesBinance(symbol, tfKey, limit) {
   const interval = CONFIG.BINANCE_TF_MAP[tfKey];
-  if (!interval) {
-    console.warn(`Binance: Geçersiz timeframe: ${tfKey}`);
-    return null;
-  }
+  if (!interval) return null;
   
   const url = `${CONFIG.BINANCE_BASE}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
   
   const r = await safeFetch(url);
-  if (!r.ok || !Array.isArray(r.data)) {
+  
+  if (!r.ok) {
+    console.log(`      ⚠️ Binance API hata: ${symbol} - Status: ${r.code}`);
+    return null;
+  }
+  
+  if (!Array.isArray(r.data) || r.data.length === 0) {
+    console.log(`      ⚠️ Binance veri yok: ${symbol}`);
     return null;
   }
   
   const candles = [];
-  // En yeni mum başta olacak şekilde sırala
   for (let i = r.data.length - 1; i >= 0; i--) {
     const d = r.data[i];
     candles.push({
@@ -109,7 +75,7 @@ async function getKlinesBinance(symbol, tfKey, limit) {
     });
   }
   
-  return candles.length > 0 ? candles : null;
+  return candles;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -119,28 +85,22 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${interval}&range=${range}`;
   
   const r = await safeFetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
+    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
   });
   
-  if (!r.ok || !r.data || !r.data.chart || !r.data.chart.result) {
+  if (!r.ok || !r.data?.chart?.result?.[0]) {
     return null;
   }
   
   const cr = r.data.chart.result[0];
   const ts = cr.timestamp;
-  const q = cr.indicators.quote[0];
+  const q = cr.indicators?.quote?.[0];
   
-  if (!ts || !q) {
-    return null;
-  }
+  if (!ts || !q) return null;
   
   const candles = [];
-  // En yeni mum başta olacak şekilde sırala
   for (let i = ts.length - 1; i >= 0; i--) {
     if (q.close[i] == null) continue;
-    
     candles.push({
       time: ts[i],
       open: q.open[i] || 0,
@@ -155,63 +115,47 @@ async function getKlinesYahoo(yahooSymbol, interval, range) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SEMBOL DÖNÜŞÜM FONKSİYONLARI
+// SEMBOL DÖNÜŞÜMLER
 // ═══════════════════════════════════════════════════════════════
 function toBinanceSymbol(pair) {
-  // "BTC/USD" -> "BTCUSDT"
   return pair.replace("/USD", "").replace("/USDT", "") + "USDT";
 }
 
-function toYahooSymbol(displaySymbol, marketType) {
-  if (marketType === "BIST") {
-    // BIST için ".IS" ekle
-    return displaySymbol.includes(".IS") ? displaySymbol : displaySymbol + ".IS";
-  }
-  if (marketType === "FOREX") {
-    // Forex için "=X" ekle
-    return displaySymbol + "=X";
-  }
-  return displaySymbol;
+function toYahooSymbol(symbol, marketType) {
+  if (marketType === "BIST") return symbol + ".IS";
+  if (marketType === "FOREX") return symbol + "=X";
+  return symbol;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ANA CANDLE FETCH FONKSİYONU
+// ANA FETCH FONKSİYONU
 // ═══════════════════════════════════════════════════════════════
 async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
-  // Cache key oluştur
   const cKey = `C_${marketType}_${displaySymbol}_${tfKey}`.replace(/[^a-zA-Z0-9_]/g, "_");
   
-  // Cache kontrolü
   const cached = getCached(cKey);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   
   let candles = null;
   
   try {
     if (marketType === "CRYPTO") {
-      // Kripto için Binance kullan
-      candles = await getKlinesBinance(toBinanceSymbol(displaySymbol), tfKey, limit);
+      const binanceSymbol = toBinanceSymbol(displaySymbol);
+      candles = await getKlinesBinance(binanceSymbol, tfKey, limit);
     } 
     else if (marketType === "BIST" || marketType === "FOREX") {
-      // BIST ve Forex için Yahoo Finance kullan
       const yt = CONFIG.YAHOO_TF_MAP[tfKey];
       if (yt) {
-        candles = await getKlinesYahoo(
-          toYahooSymbol(displaySymbol, marketType), 
-          yt.interval, 
-          yt.range
-        );
+        const yahooSymbol = toYahooSymbol(displaySymbol, marketType);
+        candles = await getKlinesYahoo(yahooSymbol, yt.interval, yt.range);
       }
     }
   } catch (e) {
-    console.error(`fetchCandles hatası (${displaySymbol}):`, e.message);
+    console.log(`      ❌ API hatası (${displaySymbol}): ${e.message}`);
   }
   
-  // Cache'e kaydet
   if (candles && candles.length > 0) {
-    setCache(cKey, candles, CACHE_TTL[tfKey]);
+    setCache(cKey, candles, CACHE_TTL[tfKey] || 3600);
   }
   
   return candles;
@@ -220,29 +164,42 @@ async function fetchCandles(displaySymbol, marketType, tfKey, limit) {
 // ═══════════════════════════════════════════════════════════════
 // API SAĞLIK KONTROLÜ
 // ═══════════════════════════════════════════════════════════════
-async function checkAPIHealth() {
-  const binanceTest = await safeFetch(`${CONFIG.BINANCE_BASE}/api/v3/ping`);
+async function testAPIs() {
+  console.log("\n🔌 API BAĞLANTI TESTİ");
+  console.log("─".repeat(50));
+  
+  // Binance test
+  const binanceTest = await safeFetch(`${CONFIG.BINANCE_BASE}/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=1`);
+  if (binanceTest.ok && Array.isArray(binanceTest.data)) {
+    const price = parseFloat(binanceTest.data[0][4]);
+    console.log(`✅ Binance: ÇALIŞIYOR (BTC: $${price.toLocaleString()})`);
+  } else {
+    console.log(`❌ Binance: HATA (${binanceTest.code || binanceTest.error})`);
+  }
+  
+  // Yahoo test
   const yahooTest = await safeFetch(
-    "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d",
+    "https://query1.finance.yahoo.com/v8/finance/chart/THYAO.IS?interval=1d&range=5d",
     { headers: { "User-Agent": "Mozilla/5.0" } }
   );
+  if (yahooTest.ok && yahooTest.data?.chart?.result?.[0]) {
+    console.log(`✅ Yahoo Finance: ÇALIŞIYOR`);
+  } else {
+    console.log(`❌ Yahoo Finance: HATA`);
+  }
+  
+  console.log("─".repeat(50) + "\n");
   
   return {
     binance: binanceTest.ok,
-    yahoo: yahooTest.ok,
-    timestamp: new Date().toISOString()
+    yahoo: yahooTest.ok
   };
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPORTS
-// ═══════════════════════════════════════════════════════════════
 module.exports = {
   safeFetch,
   fetchCandles,
-  checkAPIHealth,
-  getCacheStats,
-  clearCache,
+  testAPIs,
   toBinanceSymbol,
   toYahooSymbol
 };
