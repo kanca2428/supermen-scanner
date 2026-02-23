@@ -1,1 +1,79 @@
-[]
+[
+  {
+    "symbol": "AKCNS",
+    "signal": "SHORT",
+    "entryPrice": 216,
+    "sl": 255.17855943952287,
+    "tp1": 200.32857622419084,
+    "tp2": 184.6571524483817,
+    "time": 1771806467,
+    "active": true,
+    "marketType": "BIST"
+  },
+  {
+    "symbol": "DMSAS",
+    "signal": "LONG",
+    "entryPrice": 9.279999732971191,
+    "sl": 8.201427119118827,
+    "tp1": 9.711428778512138,
+    "tp2": 10.142857824053083,
+    "time": 1771806491,
+    "active": true,
+    "marketType": "BIST"
+  },
+  {
+    "symbol": "EURCHF",
+    "signal": "LONG",
+    "entryPrice": 0.9125999808311462,
+    "sl": 0.8932571027960096,
+    "tp1": 0.9203371320452008,
+    "tp2": 0.9280742832592556,
+    "time": 1771806573,
+    "active": true,
+    "marketType": "FOREX"
+  },
+  {
+    "symbol": "EURAUD",
+    "signal": "LONG",
+    "entryPrice": 1.666409969329834,
+    "sl": 1.5932349222046989,
+    "tp1": 1.695679988179888,
+    "tp2": 1.7249500070299422,
+    "time": 1771806574,
+    "active": true,
+    "marketType": "FOREX"
+  },
+  {
+    "symbol": "GBPAUD",
+    "signal": "LONG",
+    "entryPrice": 1.90556001663208,
+    "sl": 1.8236207025391715,
+    "tp1": 1.9383357422692435,
+    "tp2": 1.971111467906407,
+    "time": 1771806575,
+    "active": true,
+    "marketType": "FOREX"
+  },
+  {
+    "symbol": "AUDNZD",
+    "signal": "SHORT",
+    "entryPrice": 1.183359980583191,
+    "sl": 1.2205613681248255,
+    "tp1": 1.168479425566537,
+    "tp2": 1.1535988705498832,
+    "time": 1771806576,
+    "active": true,
+    "marketType": "FOREX"
+  },
+  {
+    "symbol": "AUDCAD",
+    "signal": "SHORT",
+    "entryPrice": 0.9691100120544434,
+    "sl": 1.0098246676581246,
+    "tp1": 0.9528241498129708,
+    "tp2": 0.9365382875714984,
+    "time": 1771806576,
+    "active": true,
+    "marketType": "FOREX"
+  }
+]
