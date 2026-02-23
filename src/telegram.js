@@ -1,158 +1,181 @@
-﻿var apis = require("./apis");
-var safeFetch = apis.safeFetch;
-var CONFIG = require("./config");
-
 // ═══════════════════════════════════════════════════════════════
-// FORMATLAMA FONKSİYONLARI
+// SUPERMEN V16.0 - TELEGRAM MODULE
 // ═══════════════════════════════════════════════════════════════
 
-function formatPrice(p, marketType) {
-  if (p == null || isNaN(p)) return "N/A";
-  var a = Math.abs(p);
-  var type = (marketType || "").toUpperCase();
+const axios = require("axios");
+const CONFIG = require("./config");
 
-  if (type === "CRYPTO") {
-    if (a < 0.00001) return p.toFixed(8);
-    if (a < 0.001) return p.toFixed(6);
-    if (a < 0.1) return p.toFixed(4);
-    if (a < 100) return p.toFixed(3);
-    return p.toFixed(2);
+// ═══════════════════════════════════════════════════════════════
+// TELEGRAM MESAJ GÖNDERME
+// ═══════════════════════════════════════════════════════════════
+async function sendTelegram(message) {
+  const token = CONFIG.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = CONFIG.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+  
+  if (!token || !chatId) {
+    console.log("⚠️ Telegram ayarları eksik, mesaj gönderilmedi.");
+    console.log("Mesaj içeriği:", message.substring(0, 100) + "...");
+    return false;
   }
-  return p.toFixed(2);
+  
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  
+  try {
+    const response = await axios.post(url, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: "HTML",
+      disable_web_page_preview: true
+    }, {
+      timeout: 10000
+    });
+    
+    if (response.data.ok) {
+      console.log("✅ Telegram mesajı gönderildi");
+      return true;
+    } else {
+      console.error("❌ Telegram API hatası:", response.data);
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Telegram gönderim hatası:", error.message);
+    return false;
+  }
 }
 
-function formatPercent(p) {
-  if (p == null || isNaN(p)) return "N/A";
-  var sign = p >= 0 ? "+" : "";
-  return sign + (p * 100).toFixed(2) + "%";
+// ═══════════════════════════════════════════════════════════════
+// FİYAT FORMATLAMA
+// ═══════════════════════════════════════════════════════════════
+function formatPrice(price) {
+  if (price == null || isNaN(price)) return "N/A";
+  
+  const absPrice = Math.abs(price);
+  
+  if (absPrice >= 1000) {
+    return price.toFixed(2);
+  } else if (absPrice >= 1) {
+    return price.toFixed(4);
+  } else if (absPrice >= 0.01) {
+    return price.toFixed(6);
+  } else {
+    return price.toFixed(8);
+  }
 }
 
-function getNow() {
-  return new Date().toLocaleString("tr-TR", {
+// ═══════════════════════════════════════════════════════════════
+// MARKET MESAJI OLUŞTURMA
+// ═══════════════════════════════════════════════════════════════
+function buildMarketMessage(marketTitle, signals) {
+  const now = new Date().toLocaleString("tr-TR", {
     timeZone: "Europe/Istanbul",
-    day: "2-digit",
-    month: "2-digit",
     year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
   });
-}
-
-function getDirectionEmoji(direction) {
-  if (direction > 0) return "🟢";
-  if (direction < 0) return "🔴";
-  return "⚪";
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TELEGRAM GÖNDERME (Gelişmiş)
-// ═══════════════════════════════════════════════════════════════
-
-async function sendTelegram(message) {
-  if (!message || message.trim().length === 0) {
-    console.log("[TELEGRAM] Mesaj boş, gönderilmedi.");
-    return false;
-  }
-
-  if (!CONFIG.TELEGRAM_BOT_TOKEN || !CONFIG.TELEGRAM_CHAT_ID) {
-    console.log("[TELEGRAM] Token veya Chat ID eksik! Config dosyasını veya Secrets ayarlarını kontrol et.");
-    return false;
-  }
-
-  // Mesaj çok uzunsa parçala (Telegram limiti 4096 karakter)
-  if (message.length > 4000) {
-    console.log("[TELEGRAM] Mesaj çok uzun, bölünüyor...");
-    var splitPoint = message.lastIndexOf("\n", 3800);
-    if (splitPoint < 200) splitPoint = 3800;
-    
-    await sendTelegram(message.substring(0, splitPoint));
-    await new Promise(function(r) { setTimeout(r, 1500); }); // Spam olmaması için bekle
-    await sendTelegram(message.substring(splitPoint));
-    return true;
-  }
-
-  var url = "https://api.telegram.org/bot" + CONFIG.TELEGRAM_BOT_TOKEN + "/sendMessage";
   
-  var payload = {
-    chat_id: CONFIG.TELEGRAM_CHAT_ID,
-    text: message,
-    parse_mode: "HTML",
-    disable_web_page_preview: true
-  };
-
-  // 1. Deneme: HTML Modunda Gönder
-  var r = await safeFetch(url, {
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: payload
-  });
-
-  if (r.ok) {
-    console.log("[TELEGRAM] Mesaj başarıyla gönderildi ✅");
-    return true;
+  // Market ikonu
+  let icon = "📊";
+  if (marketTitle === "CRYPTO") icon = "🪙";
+  else if (marketTitle === "FOREX") icon = "💱";
+  else if (marketTitle === "BIST") icon = "🏦";
+  
+  let msg = `${icon} <b>${marketTitle} SİNYALLERİ</b>\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `⏰ ${now}\n\n`;
+  
+  if (!signals || signals.length === 0) {
+    msg += `🚫 Aktif sinyal bulunamadı.\n`;
+    return msg;
   }
-
-  // Hata Analizi
-  console.log("[TELEGRAM] HTML Gönderimi Başarısız: " + (r.data ? JSON.stringify(r.data) : "Bilinmeyen Hata"));
-
-  // 2. Deneme: HTML Parse Hatası varsa Düz Metin olarak tekrar dene
-  // (Bazen sembollerdeki < > & karakterleri HTML modunu bozar)
-  if (r.data && r.data.description && r.data.description.includes("parse")) {
-    console.log("[TELEGRAM] HTML hatası algılandı, düz metin olarak tekrar deneniyor...");
-    delete payload.parse_mode; // HTML modunu kapat
-    var r2 = await safeFetch(url, {
-      method: "post",
-      headers: { "Content-Type": "application/json" },
-      data: payload
-    });
+  
+  // Long ve Short sayıları
+  const longCount = signals.filter(s => s.signal === "LONG" || s.direction === 1).length;
+  const shortCount = signals.filter(s => s.signal === "SHORT" || s.direction === -1).length;
+  
+  msg += `📈 LONG: ${longCount} | 📉 SHORT: ${shortCount}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  
+  // Sinyalleri listele
+  for (const s of signals) {
+    const isLong = s.signal === "LONG" || s.direction === 1;
+    const dirIcon = isLong ? "🟢" : "🔴";
+    const dirText = isLong ? "LONG" : "SHORT";
     
-    if (r2.ok) {
-      console.log("[TELEGRAM] Düz metin olarak gönderildi ✅");
-      return true;
-    } else {
-      console.log("[TELEGRAM] Düz metin gönderimi de başarısız ❌: " + JSON.stringify(r2.data));
+    msg += `${dirIcon} <b>${s.symbol}</b> - ${dirText}\n`;
+    msg += `├ Giriş: ${formatPrice(s.entryPrice || s.lastPrice)}\n`;
+    msg += `├ Stop: ${formatPrice(s.stopLoss || s.sl)}\n`;
+    msg += `├ TP1: ${formatPrice(s.tp1)}\n`;
+    msg += `├ TP2: ${formatPrice(s.tp2)}\n`;
+    
+    if (s.stochK || s.stochKStr) {
+      msg += `└ Stoch: ${s.stochK || s.stochKStr}\n`;
     }
-  }
-
-  return false;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MESAJ OLUŞTURUCU
-// ═══════════════════════════════════════════════════════════════
-
-function buildMarketMessage(marketTitle, signals) {
-  if (!signals || signals.length === 0) return "";
-
-  var msg = "╔═══════════════════════╗\n";
-  msg += "║   🚀 <b>SUPERMEN V16.0</b> 🚀   ║\n";
-  msg += "╚═══════════════════════╝\n\n";
-  
-  msg += "📊 <b>" + marketTitle + " TARAMASI</b>\n";
-  msg += "⏰ " + getNow() + "\n";
-  msg += "━━━━━━━━━━━━━━━━━━━━━\n\n";
-
-  for (var i = 0; i < signals.length; i++) {
-    var s = signals[i];
-    var emoji = getDirectionEmoji(s.direction);
-    var dirText = s.direction === 1 ? "LONG (AL)" : "SHORT (SAT)";
     
-    msg += emoji + " <b>" + s.symbol + "</b>\n";
-    msg += "Yön: " + dirText + "\n";
-    msg += "💰 Giriş: " + formatPrice(s.entryPrice, s.marketType) + "\n";
-    msg += "🛑 SL: " + formatPrice(s.sl, s.marketType) + "\n";
-    msg += "🎯 TP1: " + formatPrice(s.tp1, s.marketType) + "\n";
-    msg += "🎯 TP2: " + formatPrice(s.tp2, s.marketType) + "\n";
-    msg += "📉 AT: " + formatPrice(s.atr, s.marketType) + "\n";
-    msg += "📊 St: " + s.stochKStr + "\n";
-    msg += "━━━━━━━━━━━━━━━━━━━━━\n";
+    msg += `\n`;
   }
-
-  msg += "\n⚠️ <i>Yatırım tavsiyesi değildir.</i>";
+  
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `🤖 <b>SUPERMEN V16.0</b>\n`;
+  msg += `⚠️ <i>Finansal tavsiye değildir</i>`;
+  
   return msg;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ÖZET MESAJ OLUŞTURMA
+// ═══════════════════════════════════════════════════════════════
+function buildSummaryMessage(allResults) {
+  const now = new Date().toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul"
+  });
+  
+  let totalSignals = 0;
+  let totalLong = 0;
+  let totalShort = 0;
+  
+  let msg = `🚀 <b>SUPERMEN V16.0 ÖZET</b>\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `⏰ ${now}\n\n`;
+  
+  for (const market of ["CRYPTO", "FOREX", "BIST"]) {
+    const data = allResults[market.toLowerCase()];
+    if (!data) continue;
+    
+    const signals = data.signals || [];
+    const longCount = signals.filter(s => s.signal === "LONG" || s.direction === 1).length;
+    const shortCount = signals.filter(s => s.signal === "SHORT" || s.direction === -1).length;
+    
+    totalSignals += signals.length;
+    totalLong += longCount;
+    totalShort += shortCount;
+    
+    let icon = "📊";
+    if (market === "CRYPTO") icon = "🪙";
+    else if (market === "FOREX") icon = "💱";
+    else if (market === "BIST") icon = "🏦";
+    
+    msg += `${icon} <b>${market}</b>\n`;
+    msg += `   Taranan: ${data.scanned || 0}\n`;
+    msg += `   Sinyal: ${signals.length} (🟢${longCount} / 🔴${shortCount})\n\n`;
+  }
+  
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `📊 <b>TOPLAM:</b> ${totalSignals} sinyal\n`;
+  msg += `🟢 LONG: ${totalLong} | 🔴 SHORT: ${totalShort}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `🤖 <b>SUPERMEN V16.0</b>`;
+  
+  return msg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════════════
 module.exports = {
-  sendTelegram: sendTelegram,
-  buildMarketMessage: buildMarketMessage
+  sendTelegram,
+  buildMarketMessage,
+  buildSummaryMessage,
+  formatPrice
 };
