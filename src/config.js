@@ -22,20 +22,20 @@ module.exports = {
   STOCH_K_PERIOD: 21,
   STOCH_D_PERIOD: 3,
   STOCH_SLOWING:  3,
-  STOCH_OB_LEVEL: 85.0,   // 85 üstü = SELL sinyali
-  STOCH_OS_LEVEL: 15.0,   // 15 altı = BUY sinyali
+  STOCH_OB_LEVEL: 70.0,   // 85 üstü = SELL sinyali
+  STOCH_OS_LEVEL: 30.0,   // 15 altı = BUY sinyali
   STOCH_USE_M5:   false,
   STOCH_USE_M15:  false,
-  STOCH_USE_H4:   true,
+  STOCH_USE_H4:   false,
   STOCH_USE_D1:   true,
-  STOCH_USE_W1:   true,
+  STOCH_USE_W1:   false,
 
   // ═══════════════════════════════════════════════════════════════
   // PIVOT POINT AYARLARI (H4 + D1 + W1 AND SİSTEMİ)
   // ═══════════════════════════════════════════════════════════════
-  PIVOT_USE_H4:         true,
+  PIVOT_USE_H4:         false,
   PIVOT_USE_D1:         true,
-  PIVOT_USE_W1:         true,
+  PIVOT_USE_W1:         false,
   SR_PROXIMITY_PERCENT: 1.0,  // Fiyatın pivot seviyesine % yakınlık toleransı
 
   // ═══════════════════════════════════════════════════════════════
