@@ -1,19 +1,19 @@
 {
   "crypto": {
     "signals": [],
-    "scanned": 0,
+    "scanned": 306,
     "errors": 0,
     "market": "CRYPTO"
   },
   "forex": {
     "signals": [],
-    "scanned": 0,
+    "scanned": 28,
     "errors": 0,
     "market": "FOREX"
   },
   "bist": {
     "signals": [],
-    "scanned": 0,
+    "scanned": 503,
     "errors": 0,
     "market": "BIST"
   }
