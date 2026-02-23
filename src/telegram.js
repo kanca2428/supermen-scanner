@@ -13,11 +13,23 @@ function formatPrice(p, marketType) {
 
   if (type === "CRYPTO") {
     if (a < 0.00001) return p.toFixed(8);
-    if (a < 0.001) return p.toFixed(6);
-    if (a < 0.1) return p.toFixed(4);
-    if (a < 100) return p.toFixed(3);
+    if (a < 0.001)   return p.toFixed(6);
+    if (a < 0.1)     return p.toFixed(4);
+    if (a < 100)     return p.toFixed(3);
     return p.toFixed(2);
   }
+
+  if (type === "FOREX") {
+    if (a < 10)  return p.toFixed(5);  // EURUSD, AUDNZD gibi → 1.18490
+    return p.toFixed(3);               // USDJPY gibi → 149.850
+  }
+
+  if (type === "BIST") {
+    if (a < 1)    return p.toFixed(4);
+    if (a < 100)  return p.toFixed(2);
+    return p.toFixed(0);               // 6070 gibi büyük fiyatlar
+  }
+
   return p.toFixed(2);
 }
 
