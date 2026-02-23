@@ -2,139 +2,204 @@ var CONFIG = require("./config");
 var apis = require("./apis");
 var fetchCandles = apis.fetchCandles;
 
+// ═══════════════════════════════════════════════════════════════════
 // 1. STOCHASTIC HESAPLAMA
-function calculateStochastic(candles, kPeriod, dPeriod, slowing) {
-  if (!candles || candles.length < kPeriod + 5) return null;
-  var rawK = [], len = candles.length;
-  for (var i = 0; i <= len - kPeriod; i++) {
+// candles: [en_eski, ..., en_yeni] sırasında olmali
+// apis.js ters getiriyor (en yeni önce) → burada düzeltiyoruz
+// ═══════════════════════════════════════════════════════════════════
+function calculateStochastic(candlesRaw, kPeriod, dPeriod, slowing) {
+  if (!candlesRaw || candlesRaw.length < kPeriod + slowing + dPeriod + 3) return null;
+
+  // apis.js [en yeni → en eski] getiriyor, ters çevir → [en eski → en yeni]
+  var candles = candlesRaw.slice().reverse();
+  var len = candles.length;
+
+  // Ham %K
+  var rawK = [];
+  for (var i = kPeriod - 1; i < len; i++) {
     var hh = -Infinity, ll = Infinity;
-    for (var j = i; j < i + kPeriod; j++) {
+    for (var j = i - kPeriod + 1; j <= i; j++) {
       if (candles[j].high > hh) hh = candles[j].high;
-      if (candles[j].low < ll) ll = candles[j].low;
+      if (candles[j].low  < ll) ll = candles[j].low;
     }
-    rawK[i] = (hh - ll) === 0 ? 50 : ((candles[i].close - ll) / (hh - ll)) * 100;
+    rawK.push((hh - ll) === 0 ? 50 : ((candles[i].close - ll) / (hh - ll)) * 100);
   }
+
+  // Slowing SMA
   var slowedK = [];
-  for (var i = 0; i <= rawK.length - slowing; i++) {
+  for (var i = slowing - 1; i < rawK.length; i++) {
     var s = 0;
-    for (var j = i; j < i + slowing; j++) s += rawK[j];
-    slowedK[i] = s / slowing;
+    for (var j = i - slowing + 1; j <= i; j++) s += rawK[j];
+    slowedK.push(s / slowing);
   }
+
+  // %D (SMA of slowedK)
   var dVal = [];
-  for (var i = 0; i <= slowedK.length - dPeriod; i++) {
+  for (var i = dPeriod - 1; i < slowedK.length; i++) {
     var s = 0;
-    for (var j = i; j < i + dPeriod; j++) s += slowedK[j];
-    dVal[i] = s / dPeriod;
+    for (var j = i - dPeriod + 1; j <= i; j++) s += slowedK[j];
+    dVal.push(s / dPeriod);
   }
-  return { k: slowedK, d: dVal };
+
+  if (slowedK.length < 2 || dVal.length < 1) return null;
+
+  return {
+    // Kapanmış son mumun değeri (sondan bir önceki)
+    k: slowedK[slowedK.length - 2],
+    d: dVal[dVal.length - 1],
+    // Tüm dizi (display için)
+    kArr: slowedK,
+    dArr: dVal
+  };
 }
 
+// ═══════════════════════════════════════════════════════════════════
 // 2. ATR HESAPLAMA
-function calculateATR(candles, period) {
-  if (!candles || candles.length < period + 2) return 0;
+// candles: apis.js formatında [en yeni → en eski]
+// ═══════════════════════════════════════════════════════════════════
+function calculateATR(candlesRaw, period) {
+  if (!candlesRaw || candlesRaw.length < period + 2) return 0;
+
+  // En yeni period+1 mumu al (en yeniden başla)
+  var candles = candlesRaw.slice(0, period + 1);
+
   var trs = [];
-  for (var i = 1; i <= period; i++) {
-    var tr = Math.max(candles[i].high - candles[i].low, Math.abs(candles[i].high - candles[i+1].close), Math.abs(candles[i].low - candles[i+1].close));
+  for (var i = 0; i < period; i++) {
+    var curr = candles[i];
+    var prev = candles[i + 1];
+    var tr = Math.max(
+      curr.high - curr.low,
+      Math.abs(curr.high - prev.close),
+      Math.abs(curr.low  - prev.close)
+    );
     trs.push(tr);
   }
-  return trs.reduce((a,b)=>a+b,0) / trs.length;
+  return trs.reduce(function(a, b) { return a + b; }, 0) / trs.length;
 }
 
-// 3. PIVOT NOKTALARI HESAPLAMA
+// ═══════════════════════════════════════════════════════════════════
+// 3. PIVOT HESAPLAMA
+// Bir önceki mumun H/L/C'sinden klasik pivot
+// ═══════════════════════════════════════════════════════════════════
 function calculatePivotPoints(candle) {
   if (!candle) return null;
-  var h = candle.high;
-  var l = candle.low;
-  var c = candle.close;
+  var h  = candle.high;
+  var l  = candle.low;
+  var c  = candle.close;
   var pp = (h + l + c) / 3;
-  var r1 = (2 * pp) - l;
-  var s1 = (2 * pp) - h;
-  var r2 = pp + (h - l);
-  var s2 = pp - (h - l);
-  var r3 = h + 2 * (pp - l);
-  var s3 = l - 2 * (h - pp);
-  return { pp: pp, r1: r1, s1: s1, r2: r2, s2: s2, r3: r3, s3: s3 };
+  return {
+    pp: pp,
+    r1: 2 * pp - l,
+    s1: 2 * pp - h,
+    r2: pp + (h - l),
+    s2: pp - (h - l),
+    r3: h + 2 * (pp - l),
+    s3: l - 2 * (h - pp)
+  };
 }
 
-function isNearLevel(price, level, percent) {
-  var diff = Math.abs(price - level);
-  var threshold = (level * percent) / 100;
-  return diff <= threshold;
+// ═══════════════════════════════════════════════════════════════════
+// 4. PIVOT ZONE KONTROL
+// SELL: fiyat >= R1 → resistance zone'da
+// BUY:  fiyat <= S1 → support zone'da
+// proximity: R1'e yaklaşırken daha erken yakalamak için tolerans
+// ═══════════════════════════════════════════════════════════════════
+function checkPivotZone(price, pivots, direction, proximityPct) {
+  if (!pivots) return false;
+  var tol = price * (proximityPct / 100);
+
+  if (direction === 1) {
+    // BUY: fiyat S1 veya altında
+    return price <= pivots.s1 + tol;
+  } else {
+    // SELL: fiyat R1 veya üzerinde
+    return price >= pivots.r1 - tol;
+  }
 }
 
-// ANA ANALİZ FONKSİYONU (ULTRA STRICT MODE)
+// ═══════════════════════════════════════════════════════════════════
+// ANA ANALİZ FONKSİYONU
+// ═══════════════════════════════════════════════════════════════════
 async function analyzeSingleSymbol(symbol) {
+  // Market tipini belirle
   var marketType = "CRYPTO";
-  if (CONFIG.BIST_SYMBOLS.includes(symbol)) marketType = "BIST";
+  if (CONFIG.BIST_SYMBOLS.includes(symbol))  marketType = "BIST";
   else if (CONFIG.FOREX_PAIRS.includes(symbol)) marketType = "FOREX";
 
-  var tfs = ["H4", "D1", "W1"];
+  var tfs    = ["H4", "D1", "W1"];
   var results = [];
   var lastCandlesH4 = null;
 
-  // --- DÖNGÜ: Her zaman dilimi için tek tek kontrol ---
-  for (var tf of tfs) {
-    var candles = await fetchCandles(symbol, marketType, tf, 50);
-    if (!candles) return null;
-    
+  for (var t = 0; t < tfs.length; t++) {
+    var tf = tfs[t];
+
+    // W1 için daha fazla mum çek (Stoch K21 + slowing + D için min 35 lazım)
+    var limit = tf === "W1" ? 60 : tf === "D1" ? 80 : 120;
+
+    var candles = await fetchCandles(symbol, marketType, tf, limit);
+    if (!candles || candles.length < 35) return null;
+
     if (tf === "H4") lastCandlesH4 = candles;
 
-    // 1. STOCHASTIC KONTROLÜ
-    var stoch = calculateStochastic(candles, CONFIG.STOCH_K_PERIOD, CONFIG.STOCH_D_PERIOD, CONFIG.STOCH_SLOWING);
+    // ── Stochastic ──
+    var stoch = calculateStochastic(
+      candles,
+      CONFIG.STOCH_K_PERIOD,
+      CONFIG.STOCH_D_PERIOD,
+      CONFIG.STOCH_SLOWING
+    );
     if (!stoch) return null;
 
-    var k = stoch.k[0];
+    var k = stoch.k;
     var dir = k <= CONFIG.STOCH_OS_LEVEL ? 1 : (k >= CONFIG.STOCH_OB_LEVEL ? -1 : 0);
-    
-    if (dir === 0) return null; // Stoch nötr ise iptal
+    if (dir === 0) return null; // Bu TF'de stoch nötr → AND bozuldu, iptal
 
-    // 2. PIVOT KONTROLÜ (Her zaman dilimi için ayrı ayrı!)
+    // ── Pivot Zone ──
     var usePivot = CONFIG["PIVOT_USE_" + tf];
-    
     if (usePivot) {
+      // candles[0] = en yeni (kapanmış son mum değil, devam eden)
+      // candles[1] = kapanmış son mum → pivot referansı için
+      // candles[2] = bir önceki → pivot hesabı için
       var currentPrice = candles[0].close;
-      var prevCandle = candles[1];
-      var pivots = calculatePivotPoints(prevCandle);
-      var proximity = CONFIG.SR_PROXIMITY_PERCENT || 0.5;
-      var isNear = false;
+      var prevCandle   = candles[1]; // Kapanmış son mumun H/L/C'si
+      var pivots       = calculatePivotPoints(prevCandle);
+      var proximity    = CONFIG.SR_PROXIMITY_PERCENT || 1.0;
 
-      if (dir === 1) { 
-        // LONG: Desteklere yakın mı?
-        if (isNearLevel(currentPrice, pivots.s1, proximity) || isNearLevel(currentPrice, pivots.s2, proximity) || isNearLevel(currentPrice, pivots.s3, proximity) || isNearLevel(currentPrice, pivots.pp, proximity)) isNear = true;
-      } else {
-        // SHORT: Dirençlere yakın mı?
-        if (isNearLevel(currentPrice, pivots.r1, proximity) || isNearLevel(currentPrice, pivots.r2, proximity) || isNearLevel(currentPrice, pivots.r3, proximity) || isNearLevel(currentPrice, pivots.pp, proximity)) isNear = true;
-      }
-
-      if (!isNear) return null; // Stoch uydu ama Pivot uymadı -> İPTAL
+      if (!checkPivotZone(currentPrice, pivots, dir, proximity)) return null;
     }
 
     results.push({ tf: tf, dir: dir, k: k });
   }
 
-  // --- SON KONTROL ---
-  if (results.length < 3 || results[0].dir !== results[1].dir || results[1].dir !== results[2].dir) return null;
+  // AND kontrolü: 3 TF hepsi aynı yönde olmalı
+  if (results.length < 3) return null;
+  if (results[0].dir !== results[1].dir || results[1].dir !== results[2].dir) return null;
 
   var direction = results[0].dir;
-  var entry = lastCandlesH4[0].close;
-  var atr = calculateATR(lastCandlesH4, CONFIG.ATR_PERIOD);
 
-  var sl = direction === 1 ? entry - (atr * CONFIG.ATR_MULTIPLIER_SL) : entry + (atr * CONFIG.ATR_MULTIPLIER_SL);
+  if (!lastCandlesH4 || lastCandlesH4.length < 5) return null;
+  var entry = lastCandlesH4[0].close;
+  var atr   = calculateATR(lastCandlesH4, CONFIG.ATR_PERIOD);
+  if (!atr || atr <= 0) return null;
+
+  var sl  = direction === 1 ? entry - (atr * CONFIG.ATR_MULTIPLIER_SL)  : entry + (atr * CONFIG.ATR_MULTIPLIER_SL);
   var tp1 = direction === 1 ? entry + (atr * CONFIG.ATR_TP1_MULTIPLIER) : entry - (atr * CONFIG.ATR_TP1_MULTIPLIER);
   var tp2 = direction === 1 ? entry + (atr * CONFIG.ATR_TP2_MULTIPLIER) : entry - (atr * CONFIG.ATR_TP2_MULTIPLIER);
 
+  var stochKStr = results.map(function(r) { return Math.round(r.k); }).join("/");
+
   return {
-    symbol: symbol,
-    marketType: marketType,
-    direction: direction,
-    signal: direction === 1 ? "LONG" : "SHORT",
-    entryPrice: entry,
-    sl: sl,
-    tp1: tp1,
-    tp2: tp2,
-    atr: atr,
-    stochKStr: Math.round(results[0].k)+"/"+Math.round(results[1].k)+"/"+Math.round(results[2].k),
-    score: 100
+    symbol:      symbol,
+    marketType:  marketType,
+    direction:   direction,
+    signal:      direction === 1 ? "LONG" : "SHORT",
+    entryPrice:  entry,
+    sl:          sl,
+    tp1:         tp1,
+    tp2:         tp2,
+    atr:         atr,
+    stochKStr:   stochKStr,
+    score:       100
   };
 }
 
