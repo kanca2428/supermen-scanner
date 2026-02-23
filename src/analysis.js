@@ -1,7 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// SUPERMEN V16.0 - ANALYSIS MODULE
-// ═══════════════════════════════════════════════════════════════
-
 const CONFIG = require("./config");
 const apis = require("./apis");
 
@@ -16,7 +12,6 @@ function calculateStochastic(candles, kPeriod, dPeriod, slowing) {
   const len = candles.length;
   const rawK = [];
   
-  // Raw %K hesapla
   for (let i = 0; i <= len - kPeriod; i++) {
     let highestHigh = -Infinity;
     let lowestLow = Infinity;
@@ -34,7 +29,6 @@ function calculateStochastic(candles, kPeriod, dPeriod, slowing) {
     }
   }
   
-  // Slowing uygula (Slow %K)
   const slowedK = [];
   for (let i = 0; i <= rawK.length - slowing; i++) {
     let sum = 0;
@@ -44,7 +38,6 @@ function calculateStochastic(candles, kPeriod, dPeriod, slowing) {
     slowedK.push(sum / slowing);
   }
   
-  // %D hesapla (Slow %K'nın SMA'sı)
   const dValues = [];
   for (let i = 0; i <= slowedK.length - dPeriod; i++) {
     let sum = 0;
@@ -63,7 +56,7 @@ function calculateStochastic(candles, kPeriod, dPeriod, slowing) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ATR (Average True Range) HESAPLAMA
+// ATR HESAPLAMA
 // ═══════════════════════════════════════════════════════════════
 function calculateATR(candles, period) {
   if (!candles || candles.length < period + 1) {
@@ -93,88 +86,34 @@ function calculateATR(candles, period) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PIVOT NOKTALARI HESAPLAMA
-// ═══════════════════════════════════════════════════════════════
-function calculatePivotPoints(candle) {
-  if (!candle) return null;
-  
-  const h = candle.high;
-  const l = candle.low;
-  const c = candle.close;
-  
-  // Classic Pivot Points
-  const pp = (h + l + c) / 3;
-  
-  const r1 = (2 * pp) - l;
-  const s1 = (2 * pp) - h;
-  
-  const r2 = pp + (h - l);
-  const s2 = pp - (h - l);
-  
-  const r3 = h + 2 * (pp - l);
-  const s3 = l - 2 * (h - pp);
-  
-  return {
-    pp: pp,
-    r1: r1,
-    r2: r2,
-    r3: r3,
-    s1: s1,
-    s2: s2,
-    s3: s3
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-// FİYAT SEVİYE YAKINLIK KONTROLÜ
-// ═══════════════════════════════════════════════════════════════
-function isNearLevel(price, level, percentThreshold) {
-  if (!price || !level) return false;
-  
-  const diff = Math.abs(price - level);
-  const threshold = (level * percentThreshold) / 100;
-  
-  return diff <= threshold;
-}
-
-// ═══════════════════════════════════════════════════════════════
 // MARKET TYPE BELİRLEME
 // ═══════════════════════════════════════════════════════════════
 function getMarketType(symbol) {
-  if (CONFIG.BIST_SYMBOLS.includes(symbol)) {
-    return "BIST";
-  }
-  if (CONFIG.FOREX_PAIRS.includes(symbol)) {
-    return "FOREX";
-  }
+  if (CONFIG.BIST_SYMBOLS.includes(symbol)) return "BIST";
+  if (CONFIG.FOREX_PAIRS.includes(symbol)) return "FOREX";
   return "CRYPTO";
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ANA ANALİZ FONKSİYONU (ULTRA STRICT MODE)
+// ANA ANALİZ FONKSİYONU (GEVŞETİLMİŞ VERSİYON)
 // ═══════════════════════════════════════════════════════════════
-async function analyzeSingleSymbol(symbol) {
+async function analyzeSingleSymbol(symbol, debug = false) {
   const marketType = getMarketType(symbol);
-  const timeframes = ["H4", "D1", "W1"];
+  const timeframes = CONFIG.TIMEFRAMES || ["H4", "D1"];
   const results = [];
-  let lastCandlesH4 = null;
+  let lastCandles = null;
   
-  // Her timeframe için analiz yap
   for (const tf of timeframes) {
     try {
       const candles = await apis.fetchCandles(symbol, marketType, tf, 50);
       
-      if (!candles || candles.length < 30) {
-        console.log(`${symbol} ${tf}: Yetersiz veri`);
-        return null;
+      if (!candles || candles.length < 20) {
+        if (debug) console.log(`   ⚠️ ${symbol} ${tf}: Yetersiz veri (${candles?.length || 0} mum)`);
+        continue; // Devam et, hata verme
       }
       
-      // H4 mumlarını sakla (entry/exit hesaplaması için)
-      if (tf === "H4") {
-        lastCandlesH4 = candles;
-      }
+      if (!lastCandles) lastCandles = candles;
       
-      // 1. STOCHASTIC KONTROLÜ
       const stoch = calculateStochastic(
         candles,
         CONFIG.STOCH_K_PERIOD,
@@ -183,8 +122,8 @@ async function analyzeSingleSymbol(symbol) {
       );
       
       if (!stoch) {
-        console.log(`${symbol} ${tf}: Stochastic hesaplanamadı`);
-        return null;
+        if (debug) console.log(`   ⚠️ ${symbol} ${tf}: Stoch hesaplanamadı`);
+        continue;
       }
       
       const k = stoch.currentK;
@@ -192,113 +131,83 @@ async function analyzeSingleSymbol(symbol) {
       // Yön belirleme
       let direction = 0;
       if (k <= CONFIG.STOCH_OS_LEVEL) {
-        direction = 1; // LONG
+        direction = 1; // LONG (oversold)
       } else if (k >= CONFIG.STOCH_OB_LEVEL) {
-        direction = -1; // SHORT
-      } else {
-        // Nötr bölge - sinyal yok
-        return null;
+        direction = -1; // SHORT (overbought)
       }
       
-      // 2. PIVOT KONTROLÜ
-      const usePivot = CONFIG["PIVOT_USE_" + tf];
-      
-      if (usePivot) {
-        const currentPrice = candles[0].close;
-        const prevCandle = candles[1];
-        const pivots = calculatePivotPoints(prevCandle);
-        
-        if (!pivots) {
-          return null;
-        }
-        
-        const proximity = CONFIG.SR_PROXIMITY_PERCENT || 0.5;
-        let isNear = false;
-        
-        if (direction === 1) {
-          // LONG: Destek seviyelerine yakın mı?
-          if (isNearLevel(currentPrice, pivots.s1, proximity) ||
-              isNearLevel(currentPrice, pivots.s2, proximity) ||
-              isNearLevel(currentPrice, pivots.s3, proximity) ||
-              isNearLevel(currentPrice, pivots.pp, proximity)) {
-            isNear = true;
-          }
-        } else {
-          // SHORT: Direnç seviyelerine yakın mı?
-          if (isNearLevel(currentPrice, pivots.r1, proximity) ||
-              isNearLevel(currentPrice, pivots.r2, proximity) ||
-              isNearLevel(currentPrice, pivots.r3, proximity) ||
-              isNearLevel(currentPrice, pivots.pp, proximity)) {
-            isNear = true;
-          }
-        }
-        
-        if (!isNear) {
-          // Pivot kontrolü geçemedi
-          return null;
-        }
+      if (debug) {
+        const status = direction === 1 ? "🟢 OVERSOLD" : direction === -1 ? "🔴 OVERBOUGHT" : "⚪ NÖTR";
+        console.log(`   📊 ${symbol} ${tf}: K=${k.toFixed(1)} ${status}`);
       }
       
-      results.push({
-        tf: tf,
-        direction: direction,
-        k: k,
-        d: stoch.currentD
-      });
+      if (direction !== 0) {
+        results.push({
+          tf: tf,
+          direction: direction,
+          k: k,
+          d: stoch.currentD
+        });
+      }
       
     } catch (error) {
-      console.error(`${symbol} ${tf} analiz hatası:`, error.message);
-      return null;
+      if (debug) console.log(`   ❌ ${symbol} ${tf}: ${error.message}`);
     }
   }
   
   // ═══════════════════════════════════════════════════════════════
-  // SON KONTROL: Tüm timeframe'ler aynı yönde mi?
+  // SİNYAL KONTROLÜ (GEVŞETİLMİŞ)
   // ═══════════════════════════════════════════════════════════════
-  if (results.length < 3) {
+  
+  // En az 1 timeframe bile yeterli (test için)
+  if (results.length === 0) {
     return null;
   }
   
-  // Tüm yönler aynı olmalı
-  const firstDirection = results[0].direction;
-  for (const r of results) {
-    if (r.direction !== firstDirection) {
-      return null;
-    }
+  // En az MIN_TF_AGREEMENT kadar TF aynı yönde mi?
+  const minAgreement = CONFIG.MIN_TF_AGREEMENT || 1;
+  
+  const longCount = results.filter(r => r.direction === 1).length;
+  const shortCount = results.filter(r => r.direction === -1).length;
+  
+  let direction = 0;
+  if (longCount >= minAgreement) {
+    direction = 1;
+  } else if (shortCount >= minAgreement) {
+    direction = -1;
+  } else {
+    if (debug) console.log(`   ⚠️ ${symbol}: Yeterli TF uyumu yok (L:${longCount} S:${shortCount})`);
+    return null;
   }
   
   // ═══════════════════════════════════════════════════════════════
   // SİNYAL OLUŞTUR
   // ═══════════════════════════════════════════════════════════════
-  const direction = firstDirection;
-  const entryPrice = lastCandlesH4[0].close;
-  const atr = calculateATR(lastCandlesH4, CONFIG.ATR_PERIOD);
+  const entryPrice = lastCandles[0].close;
+  const atr = calculateATR(lastCandles, CONFIG.ATR_PERIOD);
   
-  // Stop Loss ve Take Profit hesapla
   let stopLoss, tp1, tp2;
   
   if (direction === 1) {
-    // LONG
     stopLoss = entryPrice - (atr * CONFIG.ATR_MULTIPLIER_SL);
     tp1 = entryPrice + (atr * CONFIG.ATR_TP1_MULTIPLIER);
     tp2 = entryPrice + (atr * CONFIG.ATR_TP2_MULTIPLIER);
   } else {
-    // SHORT
     stopLoss = entryPrice + (atr * CONFIG.ATR_MULTIPLIER_SL);
     tp1 = entryPrice - (atr * CONFIG.ATR_TP1_MULTIPLIER);
     tp2 = entryPrice - (atr * CONFIG.ATR_TP2_MULTIPLIER);
   }
   
-  // Stoch K değerlerini string olarak hazırla
   const stochKStr = results.map(r => Math.round(r.k)).join("/");
   
-  // Skor hesapla (basit versiyon)
-  let score = 100;
+  // Skor hesapla
+  let score = 50 + (results.length * 25); // Her uyumlu TF için +25
   
-  // Stoch değerlerine göre skor artır
   for (const r of results) {
-    if (direction === 1 && r.k <= 10) score += 10;
-    if (direction === -1 && r.k >= 90) score += 10;
+    if (direction === 1 && r.k <= 10) score += 15;
+    else if (direction === 1 && r.k <= 15) score += 10;
+    if (direction === -1 && r.k >= 90) score += 15;
+    else if (direction === -1 && r.k >= 85) score += 10;
   }
   
   return {
@@ -316,22 +225,15 @@ async function analyzeSingleSymbol(symbol) {
     atr: atr,
     stochK: stochKStr,
     stochKStr: stochKStr,
-    score: score,
-    h4K: results[0].k,
-    d1K: results[1].k,
-    w1K: results[2].k,
+    score: Math.min(score, 200),
+    tfCount: results.length,
     timestamp: Date.now()
   };
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPORTS
-// ═══════════════════════════════════════════════════════════════
 module.exports = {
   analyzeSingleSymbol,
   calculateStochastic,
   calculateATR,
-  calculatePivotPoints,
-  isNearLevel,
   getMarketType
 };
