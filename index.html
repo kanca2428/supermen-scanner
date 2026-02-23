@@ -1,350 +1,960 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Signal Dashboard</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary-color: #1a1a2e;
-            --secondary-color: #16213e;
-            --accent-color: #0f3460;
-            --text-color: #e94560;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUPERMEN V15.0 Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            background-color: var(--primary-color);
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --border: #1e293b;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.1);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59, 130, 246, 0.1);
+    --yellow: #f59e0b;
+    --yellow-bg: rgba(245, 158, 11, 0.1);
+    --purple: #8b5cf6;
+  }
 
-        .dashboard-header {
-            background-color: var(--secondary-color);
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
 
-        .signal-card {
-            background-color: var(--secondary-color);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+  /* ── Header ──────────────────────────────────────────── */
+  .header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-        .signal-card:hover {
-            transform: translateY(-5px);
-        }
+  .header-left h1 {
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--blue), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 
-        .signal-badge {
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
+  .header-left .subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
 
-        .buy-signal {
-            background-color: #28a745;
-        }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-        .sell-signal {
-            background-color: #dc3545;
-        }
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
 
-        .stats-card {
-            background-color: var(--accent-color);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+  .status-badge.online {
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
 
-        .stats-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: var(--text-color);
-        }
+  .status-badge.offline {
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
 
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
+  .pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid var(--text-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+  .refresh-btn {
+    background: var(--blue);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { background: #2563eb; transform: scale(1.05); }
 
-        .table-dark {
-            background-color: var(--secondary-color);
-        }
+  /* ── Grid Layout ─────────────────────────────────────── */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 
-        .table-dark th,
-        .table-dark td {
-            border-color: var(--accent-color);
-        }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
 
-        .error-message {
-            background-color: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            display: none;
-        }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--blue);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+  }
 
-        .last-update {
-            font-size: 0.9em;
-            color: #888;
-            text-align: right;
-            margin-top: 10px;
-        }
-    </style>
+  .stat-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .stat-card .change {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .stat-card.green .value { color: var(--green); }
+  .stat-card.red .value { color: var(--red); }
+  .stat-card.blue .value { color: var(--blue); }
+  .stat-card.yellow .value { color: var(--yellow); }
+
+  /* ── Charts Row ──────────────────────────────────────── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .chart-card h3 {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chart-wrapper {
+    position: relative;
+    height: 250px;
+  }
+
+  /* ── Market Tabs ─────────────────────────────────────── */
+  .market-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .market-tab {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .market-tab:hover { border-color: var(--blue); color: var(--text-primary); }
+  .market-tab.active {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  .market-tab .count {
+    background: var(--blue);
+    color: white;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+  }
+
+  /* ── Signal Table ────────────────────────────────────── */
+  .signals-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .signals-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .signals-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .signal-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .signal-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    background: rgba(30, 41, 59, 0.5);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .signal-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.3);
+    font-size: 13px;
+  }
+
+  .signal-table tr:hover td {
+    background: var(--bg-card-hover);
+  }
+
+  .direction-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .direction-badge.long {
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  .direction-badge.short {
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .score-bar {
+    width: 60px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s;
+  }
+
+  .price-cell {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+  }
+
+  .symbol-cell {
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  /* ── Sentiment Gauge ─────────────────────────────────── */
+  .sentiment-container {
+    text-align: center;
+    padding: 20px;
+  }
+
+  .sentiment-emoji {
+    font-size: 48px;
+    margin-bottom: 8px;
+  }
+
+  .sentiment-text {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* ── No Data ─────────────────────────────────────────── */
+  .no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .no-data .icon { font-size: 48px; margin-bottom: 12px; }
+  .no-data .msg { font-size: 14px; }
+
+  /* ── Footer ──────────────────────────────────────────── */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  /* ── Responsive ──────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .header { padding: 16px; }
+    .container { padding: 12px; }
+    .signal-table { font-size: 11px; }
+    .signal-table th, .signal-table td { padding: 8px 10px; }
+  }
+
+  /* ── Animations ──────────────────────────────────────── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 0.4s ease-out; }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    height: 20px;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+</style>
 </head>
 <body>
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
+
+<!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-left">
+    <h1>🚀 SUPERMEN V15.0</h1>
+    <div class="subtitle">Multi-TF Stochastic Scanner • GitHub Actions</div>
+  </div>
+  <div class="header-right">
+    <div id="statusBadge" class="status-badge offline">
+      <div class="pulse" style="background:var(--red)"></div>
+      <span>Yükleniyor...</span>
+    </div>
+    <div id="lastUpdate" style="font-size:12px;color:var(--text-muted)">--</div>
+    <button class="refresh-btn" onclick="loadAllData()">🔄 Yenile</button>
+  </div>
+</div>
+
+<!-- ═══ CONTAINER ═════════════════════════════════════════════════════ -->
+<div class="container">
+
+  <!-- ── Stats Row ─────────────────────────────────────────────────── -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card green">
+      <div class="label">🟢 AL Sinyalleri</div>
+      <div class="value" id="totalBuy">--</div>
+      <div class="change" style="color:var(--green)">Aktif LONG</div>
+    </div>
+    <div class="stat-card red">
+      <div class="label">🔴 SAT Sinyalleri</div>
+      <div class="value" id="totalSell">--</div>
+      <div class="change" style="color:var(--red)">Aktif SHORT</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="label">📊 Toplam Taranan</div>
+      <div class="value" id="totalScanned">--</div>
+      <div class="change" style="color:var(--text-muted)">Sembol</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="label">⭐ En Yüksek Skor</div>
+      <div class="value" id="topScore">--</div>
+      <div class="change" id="topScoreSymbol" style="color:var(--yellow)">--</div>
+    </div>
+  </div>
+
+  <!-- ── Charts Row ────────────────────────────────────────────────── -->
+  <div class="charts-grid">
+    <!-- Sinyal Dağılımı Pie -->
+    <div class="chart-card">
+      <h3>📊 Sinyal Dağılımı</h3>
+      <div class="chart-wrapper">
+        <canvas id="pieChart"></canvas>
+      </div>
     </div>
 
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-chart-line me-2"></i>
-                        Trading Signal Dashboard
-                    </h1>
-                </div>
-                <div class="col-auto">
-                    <span class="badge bg-success" id="connectionStatus">
-                        <i class="fas fa-circle me-1"></i>
-                        Aktif
-                    </span>
-                </div>
-            </div>
+    <!-- Sinyal Geçmişi Line -->
+    <div class="chart-card">
+      <h3>📈 Sinyal Geçmişi (Son 24 Saat)</h3>
+      <div class="chart-wrapper">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Sentiment + Market Summary ────────────────────────────────── -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>🧭 Piyasa Duyarlılığı</h3>
+      <div class="sentiment-container" id="sentimentContainer">
+        <div class="sentiment-emoji" id="sentimentEmoji">⏳</div>
+        <div class="sentiment-text" id="sentimentText">Yükleniyor...</div>
+        <div style="margin-top:12px;font-size:13px;color:var(--text-muted)" id="sentimentDetail">--</div>
+      </div>
+    </div>
+
+    <!-- Market Score Distribution Bar -->
+    <div class="chart-card">
+      <h3>📊 Market Bazlı Sinyal Skoru</h3>
+      <div class="chart-wrapper">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Market Tabs + Signals ─────────────────────────────────────── -->
+  <div class="market-tabs" id="marketTabs">
+    <div class="market-tab active" data-market="all" onclick="switchTab('all')">
+      📊 Tümü <span class="count" id="countAll">0</span>
+    </div>
+    <div class="market-tab" data-market="crypto" onclick="switchTab('crypto')">
+      🪙 Kripto <span class="count" id="countCrypto">0</span>
+    </div>
+    <div class="market-tab" data-market="forex" onclick="switchTab('forex')">
+      💱 Forex <span class="count" id="countForex">0</span>
+    </div>
+    <div class="market-tab" data-market="bist" onclick="switchTab('bist')">
+      🏦 BIST <span class="count" id="countBist">0</span>
+    </div>
+  </div>
+
+  <div class="signals-card fade-in">
+    <div class="signals-header">
+      <h3 id="signalsTitle">📡 Aktif Sinyaller</h3>
+      <div style="font-size:12px;color:var(--text-muted)" id="signalsInfo">--</div>
+    </div>
+    <div id="signalsBody">
+      <div class="no-data">
+        <div class="icon">📡</div>
+        <div class="msg">Veri yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
+<div class="footer">
+  ⚠️ Finansal tavsiye değildir • 🤖 SUPERMEN V15.0 • GitHub Actions ile çalışır
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Ayarlar ───────────────────────────────────────────────────────────
+// GitHub Pages URL'ini buraya yaz (veya otomatik algıla)
+const DATA_BASE = (() => {
+  // GitHub Pages'deyse: /repo-name/data/
+  // Lokalde: ../data/
+  const loc = window.location;
+  if (loc.hostname.includes('github.io')) {
+    const parts = loc.pathname.split('/');
+    const repo = parts[1] || '';
+    return `/${repo}/data`;
+  }
+  return '../data';
+})();
+
+let allSignals = {};
+let historyData = [];
+let statusData = {};
+let currentTab = 'all';
+
+// Chart instances
+let pieChart = null;
+let lineChart = null;
+let barChart = null;
+
+// ── Veri Yükleme ──────────────────────────────────────────────────────
+async function loadJSON(filename) {
+  try {
+    const resp = await fetch(`${DATA_BASE}/${filename}?t=${Date.now()}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch (e) {
+    console.warn(`${filename} yüklenemedi:`, e);
+    return null;
+  }
+}
+
+async function loadAllData() {
+  try {
+    const [signals, history, status] = await Promise.all([
+      loadJSON('signals.json'),
+      loadJSON('history.json'),
+      loadJSON('status.json')
+    ]);
+
+    if (signals) allSignals = signals;
+    if (history) historyData = history;
+    if (status) statusData = status;
+
+    updateUI();
+    updateStatus(true);
+  } catch (e) {
+    console.error('Veri yükleme hatası:', e);
+    updateStatus(false);
+  }
+}
+
+// ── UI Güncelleme ─────────────────────────────────────────────────────
+function updateUI() {
+  updateStats();
+  updateCharts();
+  updateSentiment();
+  renderSignals();
+}
+
+function updateStatus(online) {
+  const badge = document.getElementById('statusBadge');
+  const lastUp = document.getElementById('lastUpdate');
+
+  if (online) {
+    badge.className = 'status-badge online';
+    badge.innerHTML = '<div class="pulse"></div><span>Aktif</span>';
+    const lastRun = statusData?.lastRun;
+    if (lastRun) {
+      const d = new Date(lastRun);
+      lastUp.textContent = `Son: ${d.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}`;
+    }
+  } else {
+    badge.className = 'status-badge offline';
+    badge.innerHTML = '<div class="pulse" style="background:var(--red)"></div><span>Bağlantı Yok</span>';
+  }
+}
+
+function updateStats() {
+  let totalBuy = 0, totalSell = 0, totalScanned = 0;
+  let topScore = 0, topSymbol = '--';
+
+  for (const market of ['crypto', 'forex', 'bist']) {
+    const data = allSignals[market];
+    if (!data) continue;
+    totalScanned += data.scanned || 0;
+    for (const s of (data.signals || [])) {
+      if (s.direction > 0) totalBuy++;
+      else totalSell++;
+      if (s.score > topScore) { topScore = s.score; topSymbol = s.displaySymbol; }
+    }
+  }
+
+  document.getElementById('totalBuy').textContent = totalBuy;
+  document.getElementById('totalSell').textContent = totalSell;
+  document.getElementById('totalScanned').textContent = totalScanned;
+  document.getElementById('topScore').textContent = topScore.toFixed(1);
+  document.getElementById('topScoreSymbol').textContent = topSymbol;
+
+  // Tab counts
+  document.getElementById('countAll').textContent = totalBuy + totalSell;
+  document.getElementById('countCrypto').textContent = (allSignals.crypto?.signals?.length) || 0;
+  document.getElementById('countForex').textContent = (allSignals.forex?.signals?.length) || 0;
+  document.getElementById('countBist').textContent = (allSignals.bist?.signals?.length) || 0;
+}
+
+// ── Sentiment ─────────────────────────────────────────────────────────
+function updateSentiment() {
+  const summary = statusData?.summary;
+  const emoji = document.getElementById('sentimentEmoji');
+  const text = document.getElementById('sentimentText');
+  const detail = document.getElementById('sentimentDetail');
+
+  if (!summary?.overall) {
+    emoji.textContent = '❓';
+    text.textContent = 'Veri bekleniyor';
+    detail.textContent = 'Henüz piyasa özeti yok';
+    return;
+  }
+
+  const { buy, sell, total, sentiment } = summary.overall;
+
+  if (sentiment.includes('GÜÇLÜ BOĞA')) {
+    emoji.textContent = '🐂🔥';
+    text.style.color = 'var(--green)';
+  } else if (sentiment.includes('BOĞA')) {
+    emoji.textContent = '🐂';
+    text.style.color = 'var(--green)';
+  } else if (sentiment.includes('GÜÇLÜ AYI')) {
+    emoji.textContent = '🐻🔥';
+    text.style.color = 'var(--red)';
+  } else if (sentiment.includes('AYI')) {
+    emoji.textContent = '🐻';
+    text.style.color = 'var(--red)';
+  } else {
+    emoji.textContent = '↔️';
+    text.style.color = 'var(--yellow)';
+  }
+
+  text.textContent = sentiment.replace(/[🐂🐻↔️🔥]/g, '').trim();
+  detail.textContent = `AL: ${buy} | SAT: ${sell} | Toplam: ${total}`;
+}
+
+// ── Charts ────────────────────────────────────────────────────────────
+function updateCharts() {
+  updatePieChart();
+  updateLineChart();
+  updateBarChart();
+}
+
+function updatePieChart() {
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  if (pieChart) pieChart.destroy();
+
+  const cryptoCount = allSignals.crypto?.signals?.length || 0;
+  const forexCount = allSignals.forex?.signals?.length || 0;
+  const bistCount = allSignals.bist?.signals?.length || 0;
+
+  let buyCount = 0, sellCount = 0;
+  for (const m of ['crypto', 'forex', 'bist']) {
+    for (const s of (allSignals[m]?.signals || [])) {
+      if (s.direction > 0) buyCount++;
+      else sellCount++;
+    }
+  }
+
+  pieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['🟢 AL (LONG)', '🔴 SAT (SHORT)'],
+      datasets: [{
+        data: [buyCount, sellCount],
+        backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.8)'],
+        borderColor: ['#10b981', '#ef4444'],
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', padding: 20, font: { size: 13 } }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+}
+
+function updateLineChart() {
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  if (lineChart) lineChart.destroy();
+
+  // History'den summary kayıtlarını çek
+  const summaries = historyData.filter(h => h.type === 'summary');
+  const labels = [];
+  const buyData = [];
+  const sellData = [];
+
+  // Son 20 kayıt
+  const recent = summaries.slice(-20);
+  for (const s of recent) {
+    const d = new Date(s.timestamp);
+    labels.push(d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+    buyData.push(s.buyCount || 0);
+    sellData.push(s.sellCount || 0);
+  }
+
+  if (labels.length === 0) {
+    labels.push('--');
+    buyData.push(0);
+    sellData.push(0);
+  }
+
+  lineChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'AL Sinyalleri',
+          data: buyData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2
+        },
+        {
+          label: 'SAT Sinyalleri',
+          data: sellData,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#94a3b8', font: { size: 12 } }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#64748b', font: { size: 10 } },
+          grid: { color: 'rgba(30,41,59,0.5)' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#64748b', stepSize: 1 },
+          grid: { color: 'rgba(30,41,59,0.5)' }
+        }
+      }
+    }
+  });
+}
+
+function updateBarChart() {
+  const ctx = document.getElementById('barChart').getContext('2d');
+  if (barChart) barChart.destroy();
+
+  const markets = ['crypto', 'forex', 'bist'];
+  const labels = ['🪙 Kripto', '💱 Forex', '🏦 BIST'];
+  const scores = markets.map(m => {
+    const sigs = allSignals[m]?.signals || [];
+    if (sigs.length === 0) return 0;
+    return sigs.reduce((sum, s) => sum + s.score, 0) / sigs.length;
+  });
+
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Ortalama Skor',
+        data: scores,
+        backgroundColor: [
+          'rgba(245,158,11,0.7)',
+          'rgba(59,130,246,0.7)',
+          'rgba(139,92,246,0.7)'
+        ],
+        borderColor: ['#f59e0b', '#3b82f6', '#8b5cf6'],
+        borderWidth: 2,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#94a3b8', font: { size: 13 } },
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#64748b' },
+          grid: { color: 'rgba(30,41,59,0.5)' }
+        }
+      }
+    }
+  });
+}
+
+// ── Tab Değiştirme ────────────────────────────────────────────────────
+function switchTab(market) {
+  currentTab = market;
+  document.querySelectorAll('.market-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.market === market);
+  });
+  renderSignals();
+}
+
+// ── Sinyal Tablosu ────────────────────────────────────────────────────
+function renderSignals() {
+  const body = document.getElementById('signalsBody');
+  const title = document.getElementById('signalsTitle');
+  const info = document.getElementById('signalsInfo');
+
+  let signals = [];
+
+  if (currentTab === 'all') {
+    for (const m of ['crypto', 'forex', 'bist']) {
+      for (const s of (allSignals[m]?.signals || [])) {
+        signals.push({ ...s, _market: m });
+      }
+    }
+    title.textContent = '📡 Tüm Aktif Sinyaller';
+  } else {
+    const data = allSignals[currentTab];
+    signals = (data?.signals || []).map(s => ({ ...s, _market: currentTab }));
+    const icons = { crypto: '🪙', forex: '💱', bist: '🏦' };
+    title.textContent = `${icons[currentTab] || '📡'} ${currentTab.toUpperCase()} Sinyalleri`;
+  }
+
+  signals.sort((a, b) => b.score - a.score);
+
+  if (signals.length === 0) {
+    body.innerHTML = `
+      <div class="no-data">
+        <div class="icon">📡</div>
+        <div class="msg">Aktif sinyal bulunamadı</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+          Scanner çalışınca sinyaller burada görünecek
         </div>
-    </header>
+      </div>`;
+    info.textContent = '0 sinyal';
+    return;
+  }
 
-    <!-- Error Message -->
-    <div class="container">
-        <div class="error-message" id="errorMessage"></div>
-    </div>
+  info.textContent = `${signals.length} sinyal`;
 
-    <!-- Main Content -->
-    <main class="container mt-4">
-        <!-- Statistics Cards -->
-        <section id="statistics" class="row mb-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-2">Toplam Sinyal</h5>
-                    <div class="stats-value" id="totalSignals">0</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-2">Başarı Oranı</h5>
-                    <div class="stats-value" id="successRate">0%</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-2">Aktif Sinyal</h5>
-                    <div class="stats-value" id="activeSignals">0</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-2">Son Güncelleme</h5>
-                    <div class="stats-value" id="lastUpdate">-</div>
-                </div>
-            </div>
-        </section>
+  let html = `<table class="signal-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Sembol</th>
+        <th>Yön</th>
+        <th>Fiyat</th>
+        <th>Stop Loss</th>
+        <th>Hedef 1</th>
+        <th>Hedef 2</th>
+        <th>Skor</th>
+        <th>Hacim</th>
+        <th>R:R</th>
+      </tr>
+    </thead>
+    <tbody>`;
 
-        <!-- Signals Section -->
-        <section id="signals" class="row">
-            <div class="col-12">
-                <h2 class="h4 mb-3">Aktif Sinyaller</h2>
-                <div id="signalsContainer"></div>
-            </div>
-        </section>
+  signals.forEach((s, i) => {
+    const isLong = s.direction > 0;
+    const dirClass = isLong ? 'long' : 'short';
+    const dirText = isLong ? '▲ LONG' : '▼ SHORT';
+    const marketIcon = { crypto: '🪙', forex: '💱', bist: '🏦' }[s._market] || '';
 
-        <!-- History Section -->
-        <section id="history" class="row mt-4">
-            <div class="col-12">
-                <h2 class="h4 mb-3">Sinyal Geçmişi</h2>
-                <div class="table-responsive">
-                    <table class="table table-dark">
-                        <thead>
-                            <tr>
-                                <th>Tarih</th>
-                                <th>Çift</th>
-                                <th>Tip</th>
-                                <th>Fiyat</th>
-                                <th>Kar</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </main>
+    const sld = Math.abs((s.lastPrice || 0) - (s.stopLoss || 0));
+    const rr1 = sld > 0 ? (Math.abs((s.tp1 || 0) - (s.lastPrice || 0)) / sld).toFixed(1) : '--';
+    const rr2 = sld > 0 ? (Math.abs((s.tp2 || 0) - (s.lastPrice || 0)) / sld).toFixed(1) : '--';
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Global değişkenler
-        let isLoading = false;
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
+    const scorePercent = Math.min(s.score / 200 * 100, 100);
+    const scoreColor = s.score > 150 ? 'var(--green)' : s.score > 100 ? 'var(--yellow)' : 'var(--blue)';
 
-        // Loading göster/gizle
-        function showLoading() {
-            isLoading = true;
-            document.getElementById('loadingOverlay').style.display = 'flex';
-        }
+    html += `<tr class="fade-in" style="animation-delay:${i * 0.05}s">
+      <td style="color:var(--text-muted)">${i + 1}</td>
+      <td class="symbol-cell">${marketIcon} ${s.displaySymbol}</td>
+      <td><span class="direction-badge ${dirClass}">${dirText}</span></td>
+      <td class="price-cell">${formatPrice(s.lastPrice)}</td>
+      <td class="price-cell" style="color:var(--red)">${formatPrice(s.stopLoss)}</td>
+      <td class="price-cell" style="color:var(--green)">${formatPrice(s.tp1)}</td>
+      <td class="price-cell" style="color:var(--green)">${formatPrice(s.tp2)}</td>
+      <td>
+        <span style="font-weight:700">${s.score?.toFixed(1)}</span>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${scorePercent}%;background:${scoreColor}"></div></div>
+      </td>
+      <td style="color:var(--text-muted);font-size:12px">${formatVolume(s.vol24h)}</td>
+      <td style="font-size:12px">${rr1} / ${rr2}</td>
+    </tr>`;
+  });
 
-        function hideLoading() {
-            isLoading = false;
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
+  html += '</tbody></table>';
+  body.innerHTML = html;
+}
 
-        // Hata mesajı göster
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
+// ── Format Yardımcıları ───────────────────────────────────────────────
+function formatPrice(p) {
+  if (p == null || isNaN(p)) return 'N/A';
+  const a = Math.abs(p);
+  if (a >= 100) return p.toFixed(2);
+  if (a >= 1) return p.toFixed(4);
+  if (a >= 0.01) return p.toFixed(6);
+  return p.toFixed(8);
+}
 
-        // Zaman dilimi dönüşümü
-        function toLocalTime(timestamp) {
-            return new Date(timestamp * 1000).toLocaleString('tr-TR', {
-                timeZone: 'Europe/Istanbul',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
+function formatVolume(v) {
+  if (!v || v <= 0) return 'N/A';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  return '$' + v.toFixed(0);
+}
 
-        // Veri yükleme fonksiyonu
-        async function loadData() {
-            if (isLoading) return;
+// ── Auto Refresh ──────────────────────────────────────────────────────
+loadAllData();
+setInterval(loadAllData, 60000); // Her 1 dakikada yenile
+</script>
 
-            showLoading();
-            try {
-                const response = await fetch('https://raw.githubusercontent.com/kanca2428/supermen-scanner/main/signals.json');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const signals = await response.json();
-                updateDashboard(signals);
-                retryCount = 0;
-            } catch (error) {
-                console.error('Veri yükleme hatası:', error);
-                if (retryCount < MAX_RETRIES) {
-                    retryCount++;
-                    setTimeout(loadData, 5000); // 5 saniye sonra tekrar dene
-                } else {
-                    showError('Veriler yüklenemedi. Lütfen sayfayı yenileyin.');
-                }
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Dashboard'u güncelle
-        function updateDashboard(signals) {
-            // İstatistikleri güncelle
-            document.getElementById('totalSignals').textContent = signals.length;
-            document.getElementById('activeSignals').textContent = signals.filter(s => s.active).length;
-            document.getElementById('lastUpdate').textContent = toLocalTime(Date.now() / 1000);
-
-            // Sinyalleri göster
-            const container = document.getElementById('signalsContainer');
-            container.innerHTML = '';
-
-            signals.forEach(signal => {
-                const card = document.createElement('div');
-                card.className = 'signal-card';
-                card.innerHTML = `
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <h5>${signal.symbol}</h5>
-                            <span class="signal-badge ${signal.signal === 'LONG' ? 'buy-signal' : 'sell-signal'}">
-                                ${signal.signal}
-                            </span>
-                        </div>
-                        <div class="col-md-4">
-                            <p class="mb-0">Giriş: ${signal.entryPrice}</p>
-                            <p class="mb-0">Stop: ${signal.sl}</p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <p class="mb-0">TP1: ${signal.tp1}</p>
-                            <p class="mb-0">TP2: ${signal.tp2}</p>
-                            <div class="last-update">
-                                ${toLocalTime(signal.time)}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
-            // Geçmişi güncelle
-            const tbody = document.getElementById('historyTable');
-            tbody.innerHTML = '';
-            
-            signals.slice(0, 10).forEach(signal => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${toLocalTime(signal.time)}</td>
-                    <td>${signal.symbol}</td>
-                    <td><span class="signal-badge ${signal.signal === 'LONG' ? 'buy-signal' : 'sell-signal'}">${signal.signal}</span></td>
-                    <td>${signal.entryPrice}</td>
-                    <td>${signal.profit || '-'}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Sayfa yüklendiğinde verileri getir
-        document.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            // Her 30 saniyede bir verileri güncelle
-            setInterval(loadData, 30000);
-        });
-    </script>
 </body>
 </html>
