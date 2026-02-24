@@ -1,0 +1,72 @@
+name: SUPERMEN V16.0 Scanner
+
+on:
+  schedule:
+    # Her 4 saatte bir çalış (UTC) — Türkiye saati: 03:00, 07:00, 11:00, 15:00, 19:00, 23:00
+    - cron: '0 0,4,8,12,16,20 * * *'
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Taranacak market (all/crypto/bist/forex)'
+        required: false
+        default: 'all'
+
+# ── KRİTİK: Aynı anda sadece 1 job çalışsın ──────────────────────
+# Önceki tarama bitmeden yeni cron gelirse iptal edilir (cancel-in-progress)
+# Bu olmadan mesajlar saatler arayla karışıyordu!
+concurrency:
+  group: scanner
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # 90 dakika sonra job zorla sonlanır
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📚 Install Dependencies
+        run: npm install
+
+      - name: 🕐 Tarama Saati (TR)
+        run: |
+          echo "UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "TR  : $(TZ='Europe/Istanbul' date '+%Y-%m-%d %H:%M:%S')"
+
+      - name: 🚀 Run Scanner
+        timeout-minutes: 80   # Node süreci için ayrı timeout
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          MARKET="${{ github.event.inputs.market || 'all' }}"
+          echo "🔍 Tarama başlıyor: $MARKET"
+          node src/scanner.js $MARKET
+
+      - name: 📤 Commit & Push Results
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add data/*.json
+
+          if git diff --staged --quiet; then
+            echo "📝 Değişiklik yok, commit atlanıyor"
+          else
+            TIMESTAMP=$(TZ='Europe/Istanbul' date '+%Y-%m-%d %H:%M')
+            git commit -m "🤖 Sinyal güncelleme: $TIMESTAMP"
+            git push
+            echo "✅ Değişiklikler push edildi"
+          fi
