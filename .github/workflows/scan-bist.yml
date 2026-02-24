@@ -1,0 +1,67 @@
+name: 📊 BIST Scanner
+
+on:
+  schedule:
+    # BIST borsa saatleri: TR 10:00-18:00
+    # Türkiye saati: 10:30, 13:00, 15:30, 18:00
+    # UTC:           07:30, 10:00, 12:30, 15:00
+    - cron: '30 7 * * 1-5'
+    - cron: '0 10 * * 1-5'
+    - cron: '30 12 * * 1-5'
+    - cron: '0 15 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: bist-scanner
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📚 Install Dependencies
+        run: npm install
+
+      - name: 🕐 Tarama Saati
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🇹🇷 TR  : $(TZ='Europe/Istanbul' date '+%Y-%m-%d %H:%M:%S')"
+          echo "🌍 UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "📊 30 BIST × 5 TF = 150 API çağrısı"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: 📊 BIST Tara
+        timeout-minutes: 15
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node src/scanner.js bist
+
+      - name: 📤 Commit & Push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git pull --rebase origin main || true
+          git add data/*.json
+          if git diff --staged --quiet; then
+            echo "📝 Değişiklik yok"
+          else
+            TIMESTAMP=$(TZ='Europe/Istanbul' date '+%Y-%m-%d %H:%M')
+            git commit -m "📊 BIST sinyal: $TIMESTAMP"
+            git push
+          fi
