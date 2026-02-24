@@ -1,33 +1,5 @@
 {
-  "crypto": [
-    {
-      "symbol": "KNC/USD",
-      "marketType": "CRYPTO",
-      "direction": -1,
-      "signal": "SHORT",
-      "entryPrice": 0.1313,
-      "sl": 0.15562142857142858,
-      "tp1": 0.11508571428571428,
-      "tp2": 0.09887142857142855,
-      "atr": 0.00810714285714286,
-      "stochKStr": "H4:91 D1:92 W1:82 M5:100 M15:100",
-      "score": 100
-    }
-  ],
+  "crypto": [],
   "bist": [],
-  "forex": [
-    {
-      "symbol": "AUDCAD",
-      "marketType": "FOREX",
-      "direction": -1,
-      "signal": "SHORT",
-      "entryPrice": 0.9684100151062012,
-      "sl": 0.9741914527756828,
-      "tp1": 0.9645557233265468,
-      "tp2": 0.9607014315468925,
-      "atr": 0.0019271458898271834,
-      "stochKStr": "H4:80 D1:90 W1:96 M5:94 M15:97",
-      "score": 100
-    }
-  ]
+  "forex": []
 }
