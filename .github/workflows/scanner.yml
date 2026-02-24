@@ -2,8 +2,8 @@ name: SUPERMEN V16.0 Scanner
 
 on:
   schedule:
-    # Her 4 saatte bir çalış (UTC) — Türkiye saati: 03:00, 07:00, 11:00, 15:00, 19:00, 23:00
-    - cron: '0 0,4,8,12,16,20 * * *'
+    # Her saat başı çalış (UTC) — Türkiye saati: 00:00, 01:00, 02:00, ... , 23:00
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       market:
