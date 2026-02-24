@@ -125,7 +125,10 @@ module.exports = {
   // apis.js Yahoo'da "EURUSD=X" formatına çevirir
   // ═══════════════════════════════════════════════════════════════
   FOREX_PAIRS: [
-    "EURUSD"
+     "EURUSD","GBPUSD","USDJPY","USDCHF","AUDUSD","USDCAD","NZDUSD",
+    "EURGBP","EURJPY","GBPJPY","CHFJPY","EURCHF","AUDJPY","CADJPY",
+    "EURAUD","EURCAD","EURNZD","GBPAUD","GBPCAD","GBPNZD","GBPCHF",
+    "AUDNZD","AUDCAD","AUDCHF","NZDCAD","NZDCHF","CADCHF","USDSGD"
   ],
 
   // ═══════════════════════════════════════════════════════════════
