@@ -1,0 +1,21 @@
+{
+  "market": "forex",
+  "signals": [
+    {
+      "symbol": "AUDNZD",
+      "marketType": "FOREX",
+      "direction": -1,
+      "signal": "SHORT",
+      "entryPrice": 1.1847100257873535,
+      "sl": 1.1889142990112305,
+      "tp1": 1.1819071769714355,
+      "tp2": 1.1791043281555176,
+      "atr": 0.0014014244079589844,
+      "stochKStr": "H4:90 D1:92 W1:95 M5:94 M15:96",
+      "score": 100
+    }
+  ],
+  "count": 1,
+  "updatedAt": "2026-02-24T01:06:38.412Z",
+  "updatedTR": "24.02.2026 04:06:38"
+}
