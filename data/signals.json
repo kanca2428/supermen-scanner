@@ -1,3 +1,17 @@
 {
-  "crypto": []
+  "forex": [
+    {
+      "symbol": "AUDNZD",
+      "marketType": "FOREX",
+      "direction": -1,
+      "signal": "SHORT",
+      "entryPrice": 1.184749960899353,
+      "sl": 1.1889992441449846,
+      "tp1": 1.1819171054022652,
+      "tp2": 1.1790842499051775,
+      "atr": 0.0014164277485438756,
+      "stochKStr": "H4:82 D1:92 W1:95 M5:97 M15:86",
+      "score": 100
+    }
+  ]
 }
