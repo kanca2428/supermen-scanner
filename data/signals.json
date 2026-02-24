@@ -1,3 +1,32 @@
 {
-  "crypto": []
+  "crypto": [],
+  "bist": [
+    {
+      "symbol": "HUBVC",
+      "marketType": "BIST",
+      "direction": -1,
+      "signal": "SHORT",
+      "entryPrice": 4.670000076293945,
+      "sl": 5.019285712923322,
+      "tp1": 4.437142985207694,
+      "tp2": 4.204285894121442,
+      "atr": 0.11642854554312569,
+      "stochKStr": "H4:97 D1:87 W1:87 M5:86 M15:93",
+      "score": 100
+    },
+    {
+      "symbol": "PSGYO",
+      "marketType": "BIST",
+      "direction": 1,
+      "signal": "LONG",
+      "entryPrice": 2.440000057220459,
+      "sl": 2.367142983845302,
+      "tp1": 2.488571439470564,
+      "tp2": 2.537142821720668,
+      "atr": 0.024285691125052317,
+      "stochKStr": "H4:9 D1:4 W1:9 M5:20 M15:11",
+      "score": 100
+    }
+  ],
+  "forex": []
 }
