@@ -22,7 +22,7 @@ function getNowTR() {
 }
 
 // ───────────────────────────────────────────────────────────────────
-// JSON YAZICI
+// JSON YAZICI — Market bazlı ayrı dosya
 // ───────────────────────────────────────────────────────────────────
 function writeJSON(file, data) {
   try {
@@ -32,6 +32,24 @@ function writeJSON(file, data) {
   } catch (e) {
     console.log("❌ Dosya yazma hatası: " + e.message);
   }
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Market bazlı AYRI dosyaya yaz
+// crypto → data/crypto-signals.json
+// bist   → data/bist-signals.json
+// forex  → data/forex-signals.json
+// ───────────────────────────────────────────────────────────────────
+function writeMarketSignals(market, signals) {
+  var filename = market + "-signals.json";
+  var data = {
+    market:    market,
+    signals:   signals,
+    count:     signals.length,
+    updatedAt: new Date().toISOString(),
+    updatedTR: getNowTR()
+  };
+  writeJSON(filename, data);
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -91,26 +109,23 @@ async function main() {
     marketsToScan = ["crypto", "bist", "forex"];
   }
 
-  // Tara
-  var allSignals = {};
-  for (var i = 0; i < marketsToScan.length; i++) {
-    allSignals[marketsToScan[i]] = await scan(marketsToScan[i]);
-  }
-
-  // signals.json'a yaz (dashboard için)
-  writeJSON("signals.json", allSignals);
-
-  // Telegram'a gönder
+  // Tara ve her marketi AYRI dosyaya yaz
   for (var i = 0; i < marketsToScan.length; i++) {
     var market  = marketsToScan[i];
-    var signals = allSignals[market];
-    var title   = market.toUpperCase();
+    var signals = await scan(market);
+
+    // ── Her market kendi dosyasına yazılır ──
+    // crypto → data/crypto-signals.json
+    // bist   → data/bist-signals.json
+    // forex  → data/forex-signals.json
+    writeMarketSignals(market, signals);
+
+    // ── Telegram'a gönder ──
+    var title = market.toUpperCase();
 
     if (signals && signals.length > 0) {
-      // Sinyal var → güzel mesaj
       await telegram.sendTelegram(telegram.buildMarketMessage(title, signals));
     } else {
-      // Sinyal yok → boş mesaj (getNowTR() ile Istanbul saati)
       await telegram.sendTelegram(
         "🚫 <b>" + title + " TARAMASI</b>\n\n" +
         "Şu an kriterlere uygun sinyal bulunamadı.\n" +
