@@ -3,16 +3,42 @@
   "bist": [],
   "forex": [
     {
-      "symbol": "GBPAUD",
+      "symbol": "AUDJPY",
       "marketType": "FOREX",
-      "direction": 1,
-      "signal": "LONG",
-      "entryPrice": 1.9013999700546265,
-      "sl": 1.8940285188811166,
-      "tp1": 1.9063142708369665,
-      "tp2": 1.9112285716193063,
-      "atr": 0.0024571503911699566,
-      "stochKStr": "H4:2 D1:4 W1:8 M5:12 M15:4",
+      "direction": -1,
+      "signal": "SHORT",
+      "entryPrice": 110.80500030517578,
+      "sl": 111.38829095023019,
+      "tp1": 110.4161398751395,
+      "tp2": 110.02727944510323,
+      "atr": 0.19443021501813615,
+      "stochKStr": "H4:95 D1:82 W1:94 M5:83 M15:91",
+      "score": 100
+    },
+    {
+      "symbol": "AUDCAD",
+      "marketType": "FOREX",
+      "direction": -1,
+      "signal": "SHORT",
+      "entryPrice": 0.9729099869728088,
+      "sl": 0.9783378200871604,
+      "tp1": 0.9692914315632412,
+      "tp2": 0.9656728761536735,
+      "atr": 0.0018092777047838484,
+      "stochKStr": "H4:97 D1:95 W1:97 M5:85 M15:93",
+      "score": 100
+    },
+    {
+      "symbol": "AUDCHF",
+      "marketType": "FOREX",
+      "direction": -1,
+      "signal": "SHORT",
+      "entryPrice": 0.5496000051498413,
+      "sl": 0.5536028572491237,
+      "tp1": 0.546931437083653,
+      "tp2": 0.5442628690174648,
+      "atr": 0.0013342840330941336,
+      "stochKStr": "H4:98 D1:87 W1:94 M5:92 M15:95",
       "score": 100
     }
   ]
