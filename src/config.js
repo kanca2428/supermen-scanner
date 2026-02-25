@@ -13,30 +13,43 @@ module.exports = {
   KUCOIN_BASE:  "https://api.kucoin.com",
 
   // CryptoCompare — ücretsiz hesap aç: https://www.cryptocompare.com/cryptopian/api-keys
-  // Boş bırakılırsa da çalışır ama limitler daha düşük olur
   CRYPTOCOMPARE_API_KEY: process.env.CRYPTOCOMPARE_API_KEY || "",
 
   // ═══════════════════════════════════════════════════════════════
-  // STOCHASTIC AYARLARI (H4 + D1 + W1 AND SİSTEMİ)
+  // STOCHASTIC AYARLARI — HOOK YÖNTEMİ
+  //
+  // HOOK MANTIĞI:
+  //   SELL: K >= OB_LEVEL bölgesine girdi → K tepe yapti → K D'yi ASAGI kesti → SAT
+  //   BUY:  K <= OS_LEVEL bölgesine girdi → K dip yapti  → K D'yi YUKARI kesti → AL
+  //   (Artık 80'e değince değil, DÖNÜNCE emir açılıyor!)
+  //
+  // STOCH_STRICT_HOOK:
+  //   false = Esnek Hook  → K OB'dayken D'yi aşağı kesince SELL (daha erken, daha çok sinyal)
+  //   true  = Katı Hook   → K OB'dan çıktıktan sonra D'yi aşağı kesince SELL (daha geç, daha güvenli)
   // ═══════════════════════════════════════════════════════════════
-  STOCH_K_PERIOD: 21,
-  STOCH_D_PERIOD: 3,
-  STOCH_SLOWING:  3,
-  STOCH_OB_LEVEL: 80.0,   // 85 üstü = SELL sinyali
-  STOCH_OS_LEVEL: 20.0,   // 15 altı = BUY sinyali
-  STOCH_USE_M5:   true,
-  STOCH_USE_M15:  true,
-  STOCH_USE_H4:   true,
-  STOCH_USE_D1:   true,
-  STOCH_USE_W1:   true,
+  STOCH_K_PERIOD:    14,      // ✅ 21'den 14'e düşürüldü (en test edilmiş standart değer)
+  STOCH_D_PERIOD:    3,       // ✅ değişmedi (standart)
+  STOCH_SLOWING:     3,       // ✅ değişmedi (standart)
+  STOCH_OB_LEVEL:    80.0,    // ✅ değişmedi (SELL hook için eşik — 90/10 yapma, sinyal gelmez!)
+  STOCH_OS_LEVEL:    20.0,    // ✅ değişmedi (BUY hook için eşik)
+  STOCH_STRICT_HOOK: false,   // ✅ YENİ — false=esnek hook (önerilir), true=katı hook
+  STOCH_USE_M5:      true,
+  STOCH_USE_M15:     true,
+  STOCH_USE_H4:      true,
+  STOCH_USE_D1:      true,
+  STOCH_USE_W1:      true,
+
+  // Micro TF (M5/M15) için ayrı OB/OS — daha geniş tutulur
+  MICRO_OB_LEVEL: 70.0,       // ✅ YENİ — M5/M15 için overbought eşiği
+  MICRO_OS_LEVEL: 30.0,       // ✅ YENİ — M5/M15 için oversold eşiği
 
   // ═══════════════════════════════════════════════════════════════
-  // PIVOT POINT AYARLARI (H4 + D1 + W1 AND SİSTEMİ)
+  // PIVOT POINT AYARLARI
   // ═══════════════════════════════════════════════════════════════
   PIVOT_USE_H4:         false,
   PIVOT_USE_D1:         true,
   PIVOT_USE_W1:         false,
-  SR_PROXIMITY_PERCENT: 1.0,  // Fiyatın pivot seviyesine % yakınlık toleransı
+  SR_PROXIMITY_PERCENT: 1.0,
 
   // ═══════════════════════════════════════════════════════════════
   // ATR AYARLARI
@@ -78,14 +91,13 @@ module.exports = {
   YAHOO_TF_MAP: {
     M5:  { interval: "5m",  range: "5d"  },
     M15: { interval: "15m", range: "5d"  },
-    H4:  { interval: "1h",  range: "60d" },  // Yahoo'da H4 yok → 1h çekip aggregate
+    H4:  { interval: "1h",  range: "60d" },
     D1:  { interval: "1d",  range: "1y"  },
     W1:  { interval: "1wk", range: "3y"  }
   },
 
   // ═══════════════════════════════════════════════════════════════
   // KRİPTO PARİTELER
-  // "BTC/USD" formatı — apis.js otomatik BTCUSDT'ye dönüştürür
   // ═══════════════════════════════════════════════════════════════
   CRYPTO_PAIRS: [
     "BTC/USD","ETH/USD","BNB/USD","XRP/USD","SOL/USD",
@@ -122,10 +134,9 @@ module.exports = {
 
   // ═══════════════════════════════════════════════════════════════
   // FOREX PARİTELER (28 MAJÖR)
-  // apis.js Yahoo'da "EURUSD=X" formatına çevirir
   // ═══════════════════════════════════════════════════════════════
   FOREX_PAIRS: [
-     "EURUSD","GBPUSD","USDJPY","USDCHF","AUDUSD","USDCAD","NZDUSD",
+    "EURUSD","GBPUSD","USDJPY","USDCHF","AUDUSD","USDCAD","NZDUSD",
     "EURGBP","EURJPY","GBPJPY","CHFJPY","EURCHF","AUDJPY","CADJPY",
     "EURAUD","EURCAD","EURNZD","GBPAUD","GBPCAD","GBPNZD","GBPCHF",
     "AUDNZD","AUDCAD","AUDCHF","NZDCAD","NZDCHF","CADCHF","USDSGD"
@@ -133,7 +144,6 @@ module.exports = {
 
   // ═══════════════════════════════════════════════════════════════
   // BIST HİSSELERİ
-  // apis.js Yahoo'da "AKBNK.IS" formatına çevirir
   // ═══════════════════════════════════════════════════════════════
   BIST_SYMBOLS: [
     "AKBNK"
