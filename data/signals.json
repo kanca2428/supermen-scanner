@@ -1,19 +1,5 @@
 {
   "crypto": [],
   "bist": [],
-  "forex": [
-    {
-      "symbol": "AUDJPY",
-      "marketType": "FOREX",
-      "direction": -1,
-      "signal": "SHORT",
-      "entryPrice": 110.84300231933594,
-      "sl": 111.45629119873047,
-      "tp1": 110.43414306640625,
-      "tp2": 110.02528381347656,
-      "atr": 0.20442962646484375,
-      "stochKStr": "H4:94 D1:82 W1:94 M5:81 M15:85",
-      "score": 100
-    }
-  ]
+  "forex": []
 }
