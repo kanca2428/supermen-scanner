@@ -43,7 +43,7 @@ function calculateStochastic(candlesRaw, kPeriod, dPeriod, slowing) {
   if (slowedK.length < 2 || dVal.length < 1) return null;
 
   return {
-    k:    slowedK[slowedK.length - 2], // Kapanmış son mum
+    k:    slowedK[slowedK.length - 1], // ✅ DÜZELTME: En yeni kapanmış mum
     d:    dVal[dVal.length - 1],
     kArr: slowedK,
     dArr: dVal
